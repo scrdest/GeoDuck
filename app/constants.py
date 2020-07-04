@@ -1,5 +1,8 @@
 import os
 
+DEFAULT_QUERY_INCREMENT = 1
+DEFAULT_SEARCH_INCREMENT = 10
+
 ROOT_DIR = os.path.dirname(__file__)
 OUTPUT_DIR = os.path.join(ROOT_DIR, 'results')
 
