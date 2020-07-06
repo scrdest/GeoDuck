@@ -1,13 +1,15 @@
 import enum
 import json
 import time
+import typing
+
 from ftplib import FTP, error_perm
 
 import requests
 
 import constants as const
 from decorators import with_print
-from utils.ftp import extract_ftp_links, build_soft_ftp_url, ftp_read
+from utils.ftp import extract_ftp_links, build_soft_ftp_url, FTPReader
 
 
 class NcbiDbs(enum.Enum):
@@ -206,8 +208,11 @@ def main(term: str, db=NcbiDbs.GDS.value, increment=None):
             randaddr, randfile = batch.popitem()[-1]
             try:
                 ftp_client.cwd('/')
-                ftp_client.cwd(randaddr)
-                ftp_client.retrbinary(f'RETR {randfile}', ftp_read)
+                for subdir in randaddr.split('/'):
+                    ftp_client.cwd(subdir)
+                reader = FTPReader(randaddr + randfile)
+                ftp_client.retrbinary(f'RETR {randfile}', reader)
+                reader.parse_result()
             except error_perm as E:
                 print(E)
             time.sleep(1)
