@@ -4,12 +4,21 @@ import constants as const
 
 def build_parser():
     parser = argparse.ArgumentParser()
+
     parser.add_argument(
         '-q', '--query',
         type=str,
         nargs='*',
         dest=const.ARG_QUERY
     )
+
+    parser.add_argument(
+        '-o', '--organism',
+        type=str,
+        nargs='?',
+        dest=const.ARG_ORGANISM
+    )
+
     return parser
     
     

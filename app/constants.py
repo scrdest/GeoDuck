@@ -7,6 +7,8 @@ ROOT_DIR = os.path.dirname(__file__)
 OUTPUT_DIR = os.path.join(ROOT_DIR, 'results')
 
 ARG_QUERY = 'Query'
+ARG_ORGANISM = 'Organism'
+ARG_FORMAT = 'Format'
 
 BASE_NCBI_QUERY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 NCBI_QUERY_URL_TEMPLATE = "{query_base}?{params}"
