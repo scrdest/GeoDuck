@@ -2,8 +2,10 @@ import os
 
 DEFAULT_QUERY_INCREMENT = 1
 DEFAULT_SEARCH_INCREMENT = 10
+DEFAULT_PARSER_REGISTRY_KEY = 'parsers'
 
 ROOT_DIR = os.path.dirname(__file__)
+BASE_DIR = os.path.dirname(ROOT_DIR)
 OUTPUT_DIR = os.path.join(ROOT_DIR, 'results')
 
 ARG_QUERY = 'Query'
