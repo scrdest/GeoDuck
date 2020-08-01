@@ -4,6 +4,7 @@ DEFAULT_QUERY_INCREMENT = 1
 DEFAULT_SEARCH_INCREMENT = 10
 
 DEFAULT_INTERFACE_REGISTRY_KEY = 'interface'
+DEFAULT_BACKEND_REGISTRY_KEY = 'backends'
 DEFAULT_PARSER_REGISTRY_KEY = 'parsers'
 
 ROOT_DIR = os.path.dirname(__file__)
@@ -20,8 +21,12 @@ ARG_FORMAT = 'Format'
 MAINARG_DATABASE = 'db'
 MAINARG_INCREMENT = 'increment'
 MAINARG_BATCH_SIZE = 'batch_size'
+MAINARG_PROCESSING_BACKEND = 'processing_backend'
 
 INTERFACE_CLI = 'cli'
+
+BACKEND_LOCAL = 'local'
+BACKEND_SPARK = 'pyspark'
 
 BASE_NCBI_QUERY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 NCBI_QUERY_URL_TEMPLATE = "{query_base}?{params}"

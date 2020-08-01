@@ -4,8 +4,8 @@ import constants as const
 from core.search import NcbiDbs
 from core.search.esearch import get_query_env
 from core.search.esummary import build_search_url, get_search_results, parse_search_response
-from parsers import parse_format, infer_format
-from utils.ftp import extract_ftp_links, build_soft_ftp_url, fetch_ftp
+from processing_backends import process_item
+from utils.ftp import extract_ftp_links, build_soft_ftp_url
 
 
 def fetch_from_pos(
@@ -61,16 +61,6 @@ def fetch_all(term: str, db=NcbiDbs.GDS.value, batch_size=None):
     return result
 
 
-def process_item(addr, fname):
-    raw_result, ftp_error = fetch_ftp(addr, fname)
-    if ftp_error:
-        print(ftp_error)
-    else:
-        print(raw_result)
-    parsed_result = parse_format(data=raw_result, dataformat=infer_format(fname))
-    return parsed_result
-
-
 def parse_app_args(app_args: dict) -> dict:
     results = dict()
 
@@ -100,6 +90,7 @@ def parse_app_args(app_args: dict) -> dict:
     results[const.MAINARG_DATABASE] = (app_args.get(const.ARG_DATABASE) or NcbiDbs.GDS.value)
     results[const.ARG_QUERY] = qry_term
     results[const.MAINARG_BATCH_SIZE] = batch_size
+    results[const.MAINARG_PROCESSING_BACKEND] = app_args.get(const.MAINARG_PROCESSING_BACKEND) or const.BACKEND_LOCAL
 
     return results
 
@@ -110,6 +101,7 @@ def main(**kwargs):
     db = app_args[const.MAINARG_DATABASE]
     term = app_args[const.ARG_QUERY]
     batch_size = app_args[const.MAINARG_BATCH_SIZE]
+    backend = app_args[const.MAINARG_PROCESSING_BACKEND]
 
     fetcher = fetch_all(term=term, db=db, batch_size=batch_size)
     batch = 'not started'
@@ -117,5 +109,9 @@ def main(**kwargs):
     while batch:
         batch = next(fetcher, None)
         randaddr, randfile = batch.popitem()[-1]
-        result = process_item(addr=randaddr, fname=randfile)
+        result = process_item(
+            backend=backend,
+            addr=randaddr,
+            fname=randfile
+        )
         time.sleep(1)
