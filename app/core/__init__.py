@@ -1,10 +1,10 @@
 import time
 
 import constants as const
-from parsers import parse_format, infer_format
 from core.search import NcbiDbs
 from core.search.esearch import get_query_env
 from core.search.esummary import build_search_url, get_search_results, parse_search_response
+from parsers import parse_format, infer_format
 from utils.ftp import extract_ftp_links, build_soft_ftp_url, fetch_ftp
 
 
@@ -71,10 +71,47 @@ def process_item(addr, fname):
     return parsed_result
 
 
-def main(term: str, db=NcbiDbs.GDS.value, increment=None):
-    _batch_size = const.DEFAULT_SEARCH_INCREMENT if increment is None else max(increment, 1)
+def parse_app_args(app_args: dict) -> dict:
+    results = dict()
 
-    fetcher = fetch_all(term=term, db=db, batch_size=_batch_size)
+    free_text_query = '+AND+'.join((
+        app_args.get(const.ARG_QUERY)
+        or []
+    ))
+
+    organism_query = '{species}[Organism]'.format(
+        species=(
+                app_args.get(const.ARG_ORGANISM)
+                or 'human'
+        )
+    )
+
+    raw_terms = [
+        free_text_query,
+        organism_query,
+        'gsm[EntryType]',
+        'csv[Supplementary Files]'
+    ]
+    qry_term = '+AND+'.join(filter(None, raw_terms))
+
+    increment = app_args.get(const.MAINARG_INCREMENT, const.DEFAULT_SEARCH_INCREMENT)
+    batch_size = const.DEFAULT_SEARCH_INCREMENT if increment is None else max(increment, 1)
+
+    results[const.MAINARG_DATABASE] = (app_args.get(const.ARG_DATABASE) or NcbiDbs.GDS.value)
+    results[const.ARG_QUERY] = qry_term
+    results[const.MAINARG_BATCH_SIZE] = batch_size
+
+    return results
+
+
+def main(**kwargs):
+    app_args = parse_app_args(kwargs)
+
+    db = app_args[const.MAINARG_DATABASE]
+    term = app_args[const.ARG_QUERY]
+    batch_size = app_args[const.MAINARG_BATCH_SIZE]
+
+    fetcher = fetch_all(term=term, db=db, batch_size=batch_size)
     batch = 'not started'
 
     while batch:

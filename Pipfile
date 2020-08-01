@@ -8,6 +8,7 @@ verify_ssl = true
 [packages]
 requests = "*"
 smart-open = "*"
+pyspark = {version="*"}
 
 [requires]
 python_version = "3.7"
