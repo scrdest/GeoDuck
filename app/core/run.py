@@ -1,4 +1,5 @@
-from core import main
+from core.app import main
+
 
 def run():
     from interface import get_interface
@@ -6,3 +7,7 @@ def run():
     wrapped_main = interface(main)
     status = wrapped_main()
     return status
+
+
+if __name__ == '__main__':
+    run()
