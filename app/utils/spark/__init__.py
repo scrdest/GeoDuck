@@ -1,3 +1,6 @@
+import constants as const
+from utils.misc import cache
+
 SPARK_SUPPORT = False
 
 try:
@@ -6,3 +9,12 @@ try:
 
 except ImportError as IEr:
     SPARK_SUPPORT = False
+
+
+if SPARK_SUPPORT:
+    from pyspark.sql import SparkSession
+
+    @cache()
+    def get_spark_session() -> SparkSession:
+        session = SparkSession.builder.appName(const.APP_NAME).getOrCreate()
+        return session

@@ -40,7 +40,7 @@ def parse_app_args(app_args: dict) -> dict:
     return results
 
 
-@with_backend(const.BACKEND_LOCAL)
+@with_backend(const.BACKEND_SPARK)
 def main(**kwargs):
     app_args = parse_app_args(kwargs)
 
@@ -54,7 +54,8 @@ def main(**kwargs):
 
     while batch:
         batch = next(fetcher, None)
-        randaddr, randfile = batch.popitem()[-1]
+        import random
+        randaddr, randfile = random.choice(tuple(batch.values()))
         result = process_item(
             backend=backend,
             addr=randaddr,

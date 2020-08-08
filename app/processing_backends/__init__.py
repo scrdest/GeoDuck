@@ -1,11 +1,13 @@
 import typing
 from functools import wraps
+from utils.misc import cache
 
 from abcs import AbstractProcessingBackend
 from constants import DEFAULT_BACKEND_REGISTRY_KEY, BACKEND_LOCAL, MAINARG_PROCESSING_BACKEND
 from utils.registry import get_registry
 
 
+@cache()
 def get_backend(
     backend_key: typing.Hashable,
     registry_key=None,

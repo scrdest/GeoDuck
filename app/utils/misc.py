@@ -1,6 +1,33 @@
 import os
+from functools import wraps
 
 import constants as const
+
+
+def cache(disabled=False):
+
+    def _cache_deco(func):
+        if disabled:
+            return func
+
+        results = {}
+
+        @wraps(func)
+        def _cache_wrapper(*args, **kwargs):
+            frozen_kwargs = tuple(kwargs.items())
+            cache_key = (args, frozen_kwargs)
+
+            try:
+                result = results[cache_key]
+            except KeyError:
+                result = func(*args, **kwargs)
+                results[cache_key] = result
+
+            return result
+
+        return _cache_wrapper
+
+    return _cache_deco
 
 
 def to_jsonl(iterable, base_filename=None):

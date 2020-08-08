@@ -77,16 +77,41 @@ def rebuild_client():
     return client
 
 
+def ftp_switchcwd(address, ftp_client):
+    ftp_client.cwd('/')
+    for subdir in address.split('/'):
+        ftp_client.cwd(subdir)
+    return True
+
+
+def ftp_listdir(address, client=None):
+    ftp_client = client or rebuild_client()
+    err = None
+    results = None
+
+    try:
+        ftp_switchcwd(address, ftp_client=ftp_client)
+        results = tuple(ftp_client.mlsd())
+
+    except ftplib.error_perm as E:
+        err = E
+
+    finally:
+        if not client:
+            # we created one, so we're closing it
+            ftp_client.close()
+
+    return err if err else results
+
+
 def fetch_ftp(address, filename, client=None):
     result, err = None, None
     ftp_client = client or rebuild_client()
 
     try:
-        ftp_client.cwd('/')
-        for subdir in address.split('/'):
-            ftp_client.cwd(subdir)
+        file_list = ftp_listdir(address=address, client=ftp_client)
 
-        for (name, metadata) in ftp_client.mlsd():
+        for (name, metadata) in file_list:
             if filename in name:
                 target = name
 
@@ -110,7 +135,3 @@ def fetch_ftp(address, filename, client=None):
             ftp_client.close()
 
     return result, err
-
-
-if SPARK_SUPPORT:
-    pass
