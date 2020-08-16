@@ -15,11 +15,12 @@ OUTPUT_DIR = os.path.join(ROOT_DIR, 'results')
 
 ARG_INTERFACE = 'AppInterface'
 ARG_DATABASE = 'Database'
-ARG_QUERY = 'Query'
+MAINARG_QUERY = 'Query'
 ARG_TERM = 'Term'
 ARG_ORGANISM = 'Organism'
 ARG_FORMAT = 'Format'
 
+MAINARG_PRECALCULATED_SOURCES = 'precalculated_sources'
 MAINARG_DATABASE = 'db'
 MAINARG_INCREMENT = 'increment'
 MAINARG_BATCH_SIZE = 'batch_size'

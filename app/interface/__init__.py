@@ -7,7 +7,8 @@ import argparse
 import constants as const
 
 
-def build_bootstrap_parser():
+def build_bootstrap_parser() -> argparse.ArgumentParser:
+    """Defines and returns a simple parser for the arguments specifying the app interface."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -22,14 +23,23 @@ def build_bootstrap_parser():
     return parser
 
 
-def read_bootstrap_args():
+def read_bootstrap_args() -> typing.Tuple[dict, list]:
+    """Creates and runs a simple parser for the arguments specifying the app interface.
+
+    Returns a tuple of known arguments (as dict) and unknown arguments (as list).
+    """
     cli_parser = build_bootstrap_parser()
     known, unknown = cli_parser.parse_known_args()
     return vars(known), unknown
 
 
 
-def get_interface(registry_key=None, *args, **kwargs):
+def get_interface(registry_key: typing.Optional[typing.Hashable] = None, *args, **kwargs) -> typing.Callable:
+    """Fetches an app UI based on the arguments passed to the minimalistic bootstrap CLI
+    and instantiates it with any arguments not consumed by the bootstrapper interface.
+
+    Returns a wrapper for the function which receives the arguments from the UI.
+    """
     bootstrap_args, other_args = read_bootstrap_args()
     interface_key = bootstrap_args.get(const.ARG_INTERFACE) or const.INTERFACE_CLI
 

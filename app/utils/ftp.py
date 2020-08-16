@@ -13,7 +13,7 @@ ftp_client_builder = ftplib.FTP
 
 @with_print(
     pretty=True,
-    disabled=True
+    disabled=False
 )
 def extract_ftp_links(search_result):
     links = {

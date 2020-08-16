@@ -10,6 +10,16 @@ def fetch_from_pos(
     batch_size=const.DEFAULT_SEARCH_INCREMENT,
     query_env=None
 ) -> dict:
+    """Fetches a single batch of search results from the remote.
+
+    :param position: Page offset of the current query
+    :param term: Query term for the current search.
+    :param db: Optional; overrides the NCBI database to search.
+    :param batch_size: Optional; max number of items to fetch in the current batch
+    :param query_env: Optional; GEO query env, as provided by the remote search response. Re-requested if None.
+
+    :returns: A dictionary of <identifier>: <download URL>
+    """
 
     _position = max(position, 1)
     _maxsize = max(batch_size, 1)
@@ -31,6 +41,13 @@ def fetch_from_pos(
 
 
 def fetch_all(term: str, db=NcbiDbs.GDS.value, batch_size=None):
+    """Creates an iterable coroutine over all search results in GEO.
+
+    :param term: Query term for the current search.
+    :param db: Optional; overrides the NCBI database to search.
+    :param batch_size: Optional; max number of items to fetch in the current batch.
+                       Can be dynamically changed by .send()-ing to the coroutine.
+    """
     result = None
     remaining_data = True
     query_env = esearch.get_query_env(term=term, db=db)

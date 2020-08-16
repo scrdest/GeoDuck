@@ -1,12 +1,21 @@
 import os
 import sys
+import typing
 from functools import wraps
 
 try: import constants as const
 except ImportError: import app.constants as const
 
-def with_print(pretty=False, disabled=False, to_stream=None):
 
+def with_print(pretty: bool = False, disabled: bool = False, to_stream: typing.Optional[typing.TextIO] = None):
+    """Parameterized decorator; debugging helper - if enabled,
+    (pretty- or regular-) prints the decorated function's return
+    value to a stream (stdout by default).
+
+    :param pretty: If True, uses pprint() to format the output, otherwise does a plain old print() [faster, less nice].
+    :param disabled: If True, the target function is not decorated but is returned as-is.
+    :param to_stream: Overrides the output stream from stdout to a custom sink.
+    """
     def _with_print_deco(func):
     
         @wraps(func)
@@ -33,7 +42,13 @@ def with_print(pretty=False, disabled=False, to_stream=None):
     return _with_print_deco
 
 
-def result_to_json(filename=None, disabled=False):
+def result_to_json(filename: typing.Optional[str], disabled: bool = False):
+    """Parameterized decorator that dumps the output of the decorated
+    function to a JSON file.
+
+    :param filename: Filesystem path for the JSON file to dump the data to.
+    :param disabled: If True, the target function is not decorated but is returned as-is.
+    """
     import json
 
     def _jsondump_deco(func):

@@ -12,7 +12,7 @@ def build_parser():
         '-q', '--query',
         type=str,
         nargs='*',
-        dest=const.ARG_QUERY
+        dest=const.MAINARG_QUERY
     )
 
     parser.add_argument(
