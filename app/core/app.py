@@ -101,12 +101,9 @@ def main(cfg=None, **kwargs):
 
     while batch:
         batch = next(fetcher, None)
-        if not batch: continue
-        import random
-        randaddr, randfile = random.choice(tuple(batch.values()))
-        result = process_item(
-            backend=backend,
-            addr=randaddr,
-            fname=randfile
-        )
-        time.sleep(1)
+        for randaddr, randfile in batch.values():
+            extracted = process_item(
+                backend=backend,
+                addr=randaddr,
+                fname=randfile
+            )

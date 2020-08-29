@@ -48,7 +48,7 @@ def get_interface(
     other_args = {}
     if not _interface_key:
         bootstrap_args, other_args = read_bootstrap_args()
-        _interface_key = interface_key or bootstrap_args.get(const.ARG_INTERFACE) or const.INTERFACE_CLI
+        _interface_key = interface_key or bootstrap_args.get(const.ARG_INTERFACE) or const.INTERFACE_NONE
 
     from interface import _registry_backend
     _repokey = registry_key or DEFAULT_INTERFACE_REGISTRY_KEY

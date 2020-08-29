@@ -6,12 +6,14 @@ ROOT_DIR = os.path.dirname(__file__)
 BASE_DIR = os.path.dirname(ROOT_DIR)
 OUTPUT_DIR = os.path.join(ROOT_DIR, 'results')
 CONFIG_DIR = os.path.join(ROOT_DIR, 'config')
-CONFIG_FILENAME = os.path.join('config', 'config.yaml')
-
 os.makedirs(CONFIG_DIR, exist_ok=True)
 
+ENV_CONFIGNAME_KEY = 'config_name'
+DEFAULT_CONFIG_FILENAME = os.path.join('config', 'config.yaml')
+
+
 DEFAULT_QUERY_INCREMENT = 1
-DEFAULT_SEARCH_INCREMENT = 10
+DEFAULT_SEARCH_INCREMENT = 1
 
 DEFAULT_INTERFACE_REGISTRY_KEY = 'interface'
 DEFAULT_BACKEND_REGISTRY_KEY = 'backends'
@@ -30,6 +32,7 @@ MAINARG_INCREMENT = 'increment'
 MAINARG_BATCH_SIZE = 'batch_size'
 MAINARG_PROCESSING_BACKEND = 'processing_backend'
 
+INTERFACE_NONE = 'none'
 INTERFACE_CLI = 'cli'
 
 BACKEND_LOCAL = 'local'
