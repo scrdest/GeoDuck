@@ -1,14 +1,23 @@
+import hydra
+
+import constants
 from core.app import main
 
+from interface import get_interface
+from processing_backends import with_backend
 
-def run():
+@hydra.main(config_path=constants.CONFIG_FILENAME, strict=False)
+def run(cfg=None):
     """Entrypoint. Wraps the main method with an interface (e.g. CLI or GUI),
     based on a bootstrap CLI argument for interface type (defaults to CLI).
     """
-    from interface import get_interface
-    interface = get_interface()
-    wrapped_main = interface(main)
-    status = wrapped_main()
+    target_interface_key = cfg.interface if cfg else None
+    interface = get_interface(target_interface_key)
+
+    target_backend_key = cfg.backend if cfg else constants.BACKEND_SPARK
+    backend = with_backend(target_backend_key)
+    wrapped_main = interface(backend(main))
+    status = wrapped_main(cfg=cfg)
     return status
 
 

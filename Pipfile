@@ -10,6 +10,7 @@ pyan3 = "*"
 requests = "*"
 smart-open = "*"
 pyspark = {version="*"}
+hydra-core = "*"
 
 [requires]
 python_version = "3.7"

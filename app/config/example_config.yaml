@@ -1,0 +1,7 @@
+interface: none
+backend: pyspark
+batch_size: 1
+query:
+  text: psoriasis[MeSH Terms]+OR+dermatitis[MeSH Terms]
+  organism: human
+  fileformat: csv

@@ -2,16 +2,20 @@ import os
 
 APP_NAME = 'GeoDuck'
 
+ROOT_DIR = os.path.dirname(__file__)
+BASE_DIR = os.path.dirname(ROOT_DIR)
+OUTPUT_DIR = os.path.join(ROOT_DIR, 'results')
+CONFIG_DIR = os.path.join(ROOT_DIR, 'config')
+CONFIG_FILENAME = os.path.join('config', 'config.yaml')
+
+os.makedirs(CONFIG_DIR, exist_ok=True)
+
 DEFAULT_QUERY_INCREMENT = 1
 DEFAULT_SEARCH_INCREMENT = 10
 
 DEFAULT_INTERFACE_REGISTRY_KEY = 'interface'
 DEFAULT_BACKEND_REGISTRY_KEY = 'backends'
 DEFAULT_PARSER_REGISTRY_KEY = 'parsers'
-
-ROOT_DIR = os.path.dirname(__file__)
-BASE_DIR = os.path.dirname(ROOT_DIR)
-OUTPUT_DIR = os.path.join(ROOT_DIR, 'results')
 
 ARG_INTERFACE = 'AppInterface'
 ARG_DATABASE = 'Database'

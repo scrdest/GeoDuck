@@ -34,18 +34,25 @@ def read_bootstrap_args() -> typing.Tuple[dict, list]:
 
 
 
-def get_interface(registry_key: typing.Optional[typing.Hashable] = None, *args, **kwargs) -> typing.Callable:
+def get_interface(
+    interface_key: typing.Optional[typing.Hashable] = None,
+    registry_key: typing.Optional[typing.Hashable] = None,
+    *args, **kwargs
+) -> typing.Callable:
     """Fetches an app UI based on the arguments passed to the minimalistic bootstrap CLI
     and instantiates it with any arguments not consumed by the bootstrapper interface.
 
     Returns a wrapper for the function which receives the arguments from the UI.
     """
-    bootstrap_args, other_args = read_bootstrap_args()
-    interface_key = bootstrap_args.get(const.ARG_INTERFACE) or const.INTERFACE_CLI
+    _interface_key = interface_key
+    other_args = {}
+    if not _interface_key:
+        bootstrap_args, other_args = read_bootstrap_args()
+        _interface_key = interface_key or bootstrap_args.get(const.ARG_INTERFACE) or const.INTERFACE_CLI
 
     from interface import _registry_backend
     _repokey = registry_key or DEFAULT_INTERFACE_REGISTRY_KEY
 
-    interface = get_registry(_repokey)[interface_key]
+    interface = get_registry(_repokey)[_interface_key]
     interface_wrapper = interface(other_args, *args, **kwargs)
     return interface_wrapper
