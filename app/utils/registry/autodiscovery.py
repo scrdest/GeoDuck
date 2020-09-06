@@ -33,7 +33,7 @@ def autodiscover(
             module_name = f'{pkg_prefix}.{discovery_dir_name}.{source_module}'
             importlib.import_module(
                 name=module_name,
-                package=None
+                package=pkg_prefix
             )
             module_count += 1
 

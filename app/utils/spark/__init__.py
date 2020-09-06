@@ -1,5 +1,5 @@
 import constants as const
-from utils.misc import cache
+from app.utils.misc import cache
 
 SPARK_SUPPORT = False
 

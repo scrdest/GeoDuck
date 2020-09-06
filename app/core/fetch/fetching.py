@@ -1,6 +1,6 @@
 import constants as const
 from core.search import NcbiDbs, esummary, esearch
-from utils.ftp import extract_ftp_links, build_soft_ftp_url
+from app.utils.ftp import extract_ftp_links, build_soft_ftp_url
 
 
 def fetch_from_pos(

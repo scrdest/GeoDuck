@@ -2,7 +2,7 @@ import argparse
 from functools import wraps
 
 import constants as const
-from utils.registry import registry_entry
+from app.utils.registry import registry_entry
 
 
 def build_parser():
@@ -19,7 +19,7 @@ def build_parser():
         '-o', '--organism',
         type=str,
         nargs='?',
-        dest=const.ARG_ORGANISM
+        dest=const.MAINARG_ORGANISM
     )
 
     return parser

@@ -1,5 +1,5 @@
 import constants as const
-from utils.registry import registry_entry
+from app.utils.registry import registry_entry
 
 
 @registry_entry(const.INTERFACE_NONE, registry_key=const.DEFAULT_INTERFACE_REGISTRY_KEY)

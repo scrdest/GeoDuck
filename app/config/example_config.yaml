@@ -1,4 +1,5 @@
 interface: none
+dry_run: false
 backend: pyspark
 batch_size: 1
 query:

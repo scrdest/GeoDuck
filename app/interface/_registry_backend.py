@@ -1,6 +1,6 @@
 import os
 import constants as const
-from utils.registry import get_registry
+from app.utils.registry import get_registry
 
 DEFINITIONS_DIR_NAME = 'definitions'
 INTERFACE_DIR = os.path.dirname(__file__)
@@ -12,7 +12,7 @@ _interface_registry = get_registry(
 )
 
 if not _interface_registry:
-    from utils.registry.autodiscovery import autodiscover
+    from app.utils.registry.autodiscovery import autodiscover
 
     pkg_prefix = '.'.join(
         os.path.split(
@@ -22,6 +22,7 @@ if not _interface_registry:
             )
         )
     )
+    print(f"PKG PREFIX is `{pkg_prefix}`")
 
     autodiscover(
         registry=_interface_registry,

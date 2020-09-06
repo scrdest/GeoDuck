@@ -1,9 +1,9 @@
 import constants as const
 from abcs import AbstractProcessingBackend
-from parsers import parse_format, infer_format
+from app.parsers import parse_format, infer_format
 
-from utils.ftp import fetch_ftp
-from utils.registry import registry_entry
+from app.utils.ftp import fetch_ftp
+from app.utils.registry import registry_entry
 
 
 @registry_entry(as_key='local', registry_key=const.DEFAULT_BACKEND_REGISTRY_KEY)

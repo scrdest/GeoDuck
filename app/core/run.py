@@ -2,11 +2,11 @@ import os
 
 import hydra
 
-import constants
-from core.app import main
+import app.constants as constants
 
-from interface import get_interface
-from processing_backends import with_backend
+from app.core.mainloop import main
+from app.interface.core import get_interface
+from app.processing_backends import with_backend
 
 config_file = os.environ.get(constants.ENV_CONFIGNAME_KEY, constants.DEFAULT_CONFIG_FILENAME)
 

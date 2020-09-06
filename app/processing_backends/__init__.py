@@ -1,10 +1,10 @@
 import typing
 from functools import wraps
-from utils.misc import cache
+from app.utils.misc import cache
 
 from abcs import AbstractProcessingBackend
 from constants import DEFAULT_BACKEND_REGISTRY_KEY, BACKEND_LOCAL, MAINARG_PROCESSING_BACKEND
-from utils.registry import get_registry
+from app.utils.registry import get_registry
 
 
 @cache()
@@ -20,7 +20,7 @@ def get_backend(
     :param registry_key: Optional; overrides the default registry to query for the backend
     """
 
-    from processing_backends import _registry_backend
+    from app.processing_backends import _registry_backend
     _repokey = registry_key or DEFAULT_BACKEND_REGISTRY_KEY
     parser = get_registry(_repokey)[backend_key]
     return parser

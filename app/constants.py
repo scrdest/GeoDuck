@@ -1,11 +1,16 @@
 import os
+import sys
 
 APP_NAME = 'GeoDuck'
 
-ROOT_DIR = os.path.dirname(__file__)
-BASE_DIR = os.path.dirname(ROOT_DIR)
-OUTPUT_DIR = os.path.join(ROOT_DIR, 'results')
+ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 CONFIG_DIR = os.path.join(ROOT_DIR, 'config')
+OUTPUT_DIR = os.path.join(ROOT_DIR, 'results')
+BASE_DIR = os.path.dirname(ROOT_DIR)
+
+if BASE_DIR not in sys.path:
+    sys.path.append(BASE_DIR)
+
 os.makedirs(CONFIG_DIR, exist_ok=True)
 
 ENV_CONFIGNAME_KEY = 'config_name'
@@ -20,17 +25,15 @@ DEFAULT_BACKEND_REGISTRY_KEY = 'backends'
 DEFAULT_PARSER_REGISTRY_KEY = 'parsers'
 
 ARG_INTERFACE = 'AppInterface'
-ARG_DATABASE = 'Database'
-MAINARG_QUERY = 'Query'
-ARG_TERM = 'Term'
-ARG_ORGANISM = 'Organism'
-ARG_FORMAT = 'Format'
 
+MAINARG_QUERY = 'Query'
+MAINARG_ORGANISM = 'Organism'
 MAINARG_PRECALCULATED_SOURCES = 'precalculated_sources'
 MAINARG_DATABASE = 'db'
 MAINARG_INCREMENT = 'increment'
 MAINARG_BATCH_SIZE = 'batch_size'
 MAINARG_PROCESSING_BACKEND = 'processing_backend'
+MAINARG_DRY_RUN = 'dry_run'
 
 INTERFACE_NONE = 'none'
 INTERFACE_CLI = 'cli'

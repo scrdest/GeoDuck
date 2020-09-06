@@ -6,8 +6,6 @@ from smart_open import open
 import constants as const
 from decorators import with_print
 
-from utils.spark import SPARK_SUPPORT
-
 ftp_client_builder = ftplib.FTP
 
 

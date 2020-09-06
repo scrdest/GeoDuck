@@ -27,7 +27,7 @@ def registry_entry(
                 put_registry(registry_data, _repokey)
 
             else:
-                from parsers._registry_backend import _parser_registry as new_registry
+                from app.parsers._registry_backend import _parser_registry as new_registry
                 put_registry(new_registry, _repokey)
 
         target_registry = get_registry(_repokey) or dict()

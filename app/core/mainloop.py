@@ -26,7 +26,7 @@ def parse_app_args(cfg: object = None, app_args: dict = None) -> dict:
 
 
     species = (
-        _app_args.get(const.ARG_ORGANISM)
+        _app_args.get(const.MAINARG_ORGANISM)
         or cfg.query.organism
     )
     organism_query = '{species}[Organism]'.format(species=species) if species else None
@@ -59,7 +59,7 @@ def parse_app_args(cfg: object = None, app_args: dict = None) -> dict:
     increment = _app_args.get(const.MAINARG_INCREMENT) or cfg.batch_size or const.DEFAULT_SEARCH_INCREMENT
     batch_size = const.DEFAULT_SEARCH_INCREMENT if increment is None else max(increment, 1)
 
-    results[const.MAINARG_DATABASE] = (_app_args.get(const.ARG_DATABASE) or NcbiDbs.GDS.value)
+    results[const.MAINARG_DATABASE] = (_app_args.get(const.MAINARG_DATABASE) or NcbiDbs.GDS.value)
     results[const.MAINARG_QUERY] = qry_term
     results[const.MAINARG_BATCH_SIZE] = batch_size
     results[const.MAINARG_PROCESSING_BACKEND] = (
@@ -68,6 +68,7 @@ def parse_app_args(cfg: object = None, app_args: dict = None) -> dict:
         or const.BACKEND_LOCAL
     )
     results[const.MAINARG_PRECALCULATED_SOURCES] = dict(cfg.accession_numbers) if cfg.accession_numbers else None
+    results[const.MAINARG_DRY_RUN] = bool(cfg.dry_run) if cfg.dry_run else False
 
     return results
 
@@ -82,6 +83,7 @@ def main(cfg=None, **kwargs):
     """
     app_args = parse_app_args(cfg=cfg, app_args=kwargs)
     backend = app_args[const.MAINARG_PROCESSING_BACKEND]
+    dry_run = app_args.get(const.MAINARG_DRY_RUN)
     batch = 'not started'
 
     precalculated_sources = app_args.get(const.MAINARG_PRECALCULATED_SOURCES)
@@ -99,11 +101,17 @@ def main(cfg=None, **kwargs):
 
         fetcher = fetch_all(term=term, db=db, batch_size=batch_size)
 
-    while batch:
-        batch = next(fetcher, None)
-        for randaddr, randfile in batch.values():
-            extracted = process_item(
-                backend=backend,
-                addr=randaddr,
-                fname=randfile
-            )
+    if not dry_run:
+
+        while batch:
+            batch = next(fetcher, None)
+
+            for randaddr, randfile in batch.values():
+                extracted = process_item(
+                    backend=backend,
+                    addr=randaddr,
+                    fname=randfile
+                )
+
+    else: print("Dry Run!")
+    return True

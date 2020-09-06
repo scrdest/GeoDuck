@@ -1,13 +1,13 @@
 import constants as const
-import utils.spark as sparkutils
+import app.utils.spark as sparkutils
 
 if sparkutils.SPARK_SUPPORT:
     import typing
     from pyspark.sql import DataFrame, SparkSession
     from pyspark.sql.utils import AnalysisException
     from abcs import AbstractProcessingBackend
-    from utils.registry import registry_entry
-    from utils.ftp import ftp_listdir
+    from app.utils.registry import registry_entry
+    from app.utils.ftp import ftp_listdir
 
     @registry_entry(as_key=const.BACKEND_SPARK, registry_key=const.DEFAULT_BACKEND_REGISTRY_KEY)
     class SparkProcessingBackend(AbstractProcessingBackend):
