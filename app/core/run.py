@@ -1,17 +1,12 @@
 import os
 
-import hydra
-
 import app.constants as constants
 
 from app.core.mainloop import main
 from app.interface.core import get_interface
 from app.processing_backends import with_backend
 
-config_file = os.environ.get(constants.ENV_CONFIGNAME_KEY, constants.DEFAULT_CONFIG_FILENAME)
 
-
-@hydra.main(config_path=config_file, strict=False)
 def run(cfg=None):
     """Entrypoint. Wraps the main method with an interface (e.g. CLI or GUI),
     based on a bootstrap CLI argument for interface type (defaults to CLI).

@@ -22,7 +22,6 @@ if not _interface_registry:
             )
         )
     )
-    print(f"PKG PREFIX is `{pkg_prefix}`")
 
     autodiscover(
         registry=_interface_registry,

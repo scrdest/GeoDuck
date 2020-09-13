@@ -1,6 +1,6 @@
 import constants as const
 from core.search import NcbiDbs, esummary, esearch
-from app.utils.ftp import extract_ftp_links, build_soft_ftp_url
+from app.utils.ftp import extract_ftp_links, build_matrix_ftp_url
 
 
 def fetch_from_pos(
@@ -32,7 +32,7 @@ def fetch_from_pos(
 
     raw_links = extract_ftp_links(search_results)
     download_links = {
-        data_id: build_soft_ftp_url(raw_link)
+        data_id: build_matrix_ftp_url(raw_link)
         for (data_id, raw_link)
         in raw_links.items()
     }

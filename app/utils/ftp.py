@@ -26,11 +26,11 @@ def extract_ftp_links(search_result):
     pretty=True,
     disabled=False
 )
-def build_soft_ftp_url(raw_ftp_link: str) -> tuple:
+def build_matrix_ftp_url(raw_ftp_link: str) -> tuple:
     entry_name = raw_ftp_link.rstrip('/').split('/')[-1]
     protocol_adjusted_link = raw_ftp_link.replace('ftp://ftp.ncbi.nlm.nih.gov/', '', 1)
-    download_ftp_path = ''.join((protocol_adjusted_link, 'suppl/'))
-    download_ftp_filename = entry_name# + '.soft.gz' #+ '_family.soft.gz'
+    download_ftp_path = ''.join((protocol_adjusted_link, 'matrix/'))
+    download_ftp_filename = entry_name
     return download_ftp_path, download_ftp_filename
 
 
@@ -99,7 +99,7 @@ def ftp_listdir(address, client=None):
             # we created one, so we're closing it
             ftp_client.close()
 
-    return err if err else results
+    return ([], err) if err else results
 
 
 def fetch_ftp(address, filename, client=None):

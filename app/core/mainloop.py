@@ -21,27 +21,44 @@ def parse_app_args(cfg: object = None, app_args: dict = None) -> dict:
             _app_args.get(const.MAINARG_QUERY)
             or []
         ))
-        or cfg.query.text  # deliberately OUTSIDE of the join() to allow more customization
+        or (
+            # deliberately OUTSIDE of the join() to allow more customization
+            cfg.query.text
+            if cfg and cfg.query
+            else None
+        )
     )
 
 
     species = (
         _app_args.get(const.MAINARG_ORGANISM)
-        or cfg.query.organism
+        or (
+            cfg.query.organism
+            if cfg and cfg.query
+            else None
+        )
     )
     organism_query = '{species}[Organism]'.format(species=species) if species else None
 
 
     entrytype = (
         None  # TODO: add CLI arg for it
-        or cfg.query.entrytype
+        or (
+            cfg.query.entrytype
+            if cfg and cfg.query
+            else None
+        )
     )
     entrytype_query = '{entrytype}[EntryType]'.format(entrytype=entrytype) if entrytype else None
 
 
     fileformat = (
             None  # TODO: add CLI arg for it
-            or cfg.query.fileformat
+            or (
+                cfg.query.fileformat
+                if cfg and cfg.query
+                else None
+            )
             or 'csv'
     )
     fileformat_query = '{fileformat}[Supplementary Files]'.format(fileformat=fileformat) if fileformat else None
@@ -56,7 +73,11 @@ def parse_app_args(cfg: object = None, app_args: dict = None) -> dict:
 
     qry_term = '+AND+'.join(filter(None, raw_terms))
 
-    increment = _app_args.get(const.MAINARG_INCREMENT) or cfg.batch_size or const.DEFAULT_SEARCH_INCREMENT
+    increment = (
+        _app_args.get(const.MAINARG_INCREMENT)
+        or (cfg.batch_size if cfg else None)
+        or const.DEFAULT_SEARCH_INCREMENT
+    )
     batch_size = const.DEFAULT_SEARCH_INCREMENT if increment is None else max(increment, 1)
 
     results[const.MAINARG_DATABASE] = (_app_args.get(const.MAINARG_DATABASE) or NcbiDbs.GDS.value)
@@ -64,11 +85,11 @@ def parse_app_args(cfg: object = None, app_args: dict = None) -> dict:
     results[const.MAINARG_BATCH_SIZE] = batch_size
     results[const.MAINARG_PROCESSING_BACKEND] = (
         _app_args.get(const.MAINARG_PROCESSING_BACKEND)
-        or cfg.backend
+        or (cfg.backend if cfg else None)
         or const.BACKEND_LOCAL
     )
-    results[const.MAINARG_PRECALCULATED_SOURCES] = dict(cfg.accession_numbers) if cfg.accession_numbers else None
-    results[const.MAINARG_DRY_RUN] = bool(cfg.dry_run) if cfg.dry_run else False
+    results[const.MAINARG_PRECALCULATED_SOURCES] = dict(cfg.accession_numbers) if (cfg and cfg.accession_numbers) else None
+    results[const.MAINARG_DRY_RUN] = bool(cfg.dry_run) if (cfg and cfg.dry_run) else False
 
     return results
 
