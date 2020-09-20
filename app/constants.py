@@ -1,5 +1,6 @@
 import os
 import sys
+import enum
 
 APP_NAME = 'GeoDuck'
 
@@ -12,6 +13,14 @@ if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
 os.makedirs(CONFIG_DIR, exist_ok=True)
+
+
+class NcbiDbs(enum.Enum):
+    DataSets = "gds"
+    Profiles = "geoprofiles"
+
+
+DEFAULT_DB_VALUE = NcbiDbs.DataSets.value
 
 ENV_CONFIGNAME_KEY = 'config_name'
 DEFAULT_CONFIG_FILENAME = os.path.join('config', 'config.yaml')

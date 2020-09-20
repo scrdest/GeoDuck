@@ -1,10 +1,12 @@
 import itertools
+import typing
 
 import constants as const
 import app.utils.spark as sparkutils
+from app.utils.decorators import preflight_message
+
 
 if sparkutils.SPARK_SUPPORT:
-    import typing
     from pyspark.sql import DataFrame, SparkSession
     from pyspark.sql.utils import AnalysisException
     from abcs import AbstractProcessingBackend
@@ -14,6 +16,15 @@ if sparkutils.SPARK_SUPPORT:
     @registry_entry(as_key=const.BACKEND_SPARK, registry_key=const.DEFAULT_BACKEND_REGISTRY_KEY)
     class SparkProcessingBackend(AbstractProcessingBackend):
         """A backend using Apache Spark for processing the data."""
+
+        @classmethod
+        def _load_handler(cls, session, source_path, csv_options):
+            result = (
+                session
+                .read
+                .csv(path=source_path, **csv_options)
+            )
+            return result
 
 
         @classmethod
@@ -47,10 +58,11 @@ if sparkutils.SPARK_SUPPORT:
                 for source_path in _trg_fnames:
                     processed_count += 1
 
-                    datum_raw = (
-                        session
-                        .read
-                        .csv(path=source_path, **_csv_options)
+                    loader_func = preflight_message(f"Loading CSV from {source_path}...")(cls._load_handler)
+                    datum_raw = loader_func(
+                        session=session,
+                        source_path=source_path,
+                        csv_options=_csv_options
                     )
 
                     yield source_path, datum_raw
@@ -90,7 +102,7 @@ if sparkutils.SPARK_SUPPORT:
                 for src_name, trg_name in files
             ]
 
-            raw_metadata_loader = cls.load_csv(
+            raw_metadata_loader = preflight_message(f"Loading metadata from {file_urls}")(cls.load_csv)(
                 files=file_urls,
                 session=session,
                 csv_options=metadata_csv_options,
@@ -102,6 +114,7 @@ if sparkutils.SPARK_SUPPORT:
 
             for filename, dataframe in raw_metadata_loader:
                 processed_count += 1
+                print(f"Processing metadata file: {filename}")
                 yield filename, dataframe
 
             return processed_count
@@ -123,18 +136,19 @@ if sparkutils.SPARK_SUPPORT:
                     )
                 )
 
-                addresses = [
-                    (filtered_df
-                     ._c1
-                     .replace(
+                raw_addresses = (
+                    filtered_df
+                    ._c1
+                    .replace(
                         # inject dummy credentials; required by Spark
                         'ftp://ftp',
                         'ftp://anonymous:anonymous@ftp'
-                     )
                     )
                     for filtered_df in relevant_rows.collect()
                     if filtered_df._c1
-                ]
+                )
+
+                addresses = [addr for addr in raw_addresses if '.' in addr]
                 yield src_fname, addresses
 
             return processed
@@ -172,16 +186,23 @@ if sparkutils.SPARK_SUPPORT:
 
             _metadata_stream = itertools.chain(*_chainable_streams)
 
-            data_files = cls.extract_data_files(metadata_stream=_metadata_stream)
+            data_files = preflight_message(
+                f"Extracting data URLs from the metadata stream..."
+                )(cls.extract_data_files)(
+                    metadata_stream=_metadata_stream
+                )
 
-            raw_data = cls.load_csv(
-                files=data_files,
-                session=session,
-                *args,
-                **kwargs
-            )
+            raw_data = preflight_message(
+                f"Loading data from FTP URLs..."
+                )(cls.load_csv)(
+                    files=data_files,
+                    session=session,
+                    *args,
+                    **kwargs
+                )
 
             data = {src_fname: data_df for src_fname, data_df in raw_data}
+            _dbg_iter = iter(data.values())  # to inspect stuff in debugger neatly
             return data
 
 

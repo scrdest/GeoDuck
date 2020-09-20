@@ -4,7 +4,7 @@ import tempfile
 from smart_open import open
 
 import constants as const
-from decorators import with_print
+from app.utils.decorators import with_print
 
 ftp_client_builder = ftplib.FTP
 

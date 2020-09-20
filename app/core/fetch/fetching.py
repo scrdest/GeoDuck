@@ -1,12 +1,12 @@
 import constants as const
-from core.search import NcbiDbs, esummary, esearch
+from core.search import esummary, esearch
 from app.utils.ftp import extract_ftp_links, build_matrix_ftp_url
 
 
 def fetch_from_pos(
     position: int,
     term: str,
-    db=NcbiDbs.GDS.value,
+    db=const.DEFAULT_DB_VALUE,
     batch_size=const.DEFAULT_SEARCH_INCREMENT,
     query_env=None
 ) -> dict:
@@ -40,7 +40,7 @@ def fetch_from_pos(
     return download_links
 
 
-def fetch_all(term: str, db=NcbiDbs.GDS.value, batch_size=None):
+def fetch_all(term: str, db=const.DEFAULT_DB_VALUE, batch_size=None):
     """Creates an iterable coroutine over all search results in GEO.
 
     :param term: Query term for the current search.

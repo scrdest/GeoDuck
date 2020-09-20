@@ -7,6 +7,32 @@ try: import constants as const
 except ImportError: import app.constants as const
 
 
+def preflight_message(
+    msg: str,
+    disabled: bool = False,
+    to_stream: typing.Optional[typing.TextIO] = None
+) -> typing.Callable:
+
+    """Parameterized decorator; if enabled, logs a specified message to
+    a stream (stdout by default) before executing the decorated function.
+
+    :param msg: Message to write out before each call to the decorated function.
+    :param disabled: If True, the target function is not decorated but is returned as-is.
+    :param to_stream: Overrides the output stream from stdout to a custom sink.
+    """
+
+    def _preflight_msg_deco(func):
+
+        @wraps(func)
+        def _preflightwrapper(*args, **kwargs):
+            print(msg, file=to_stream)
+            return func(*args, **kwargs)
+
+        return func if disabled else _preflightwrapper
+
+    return _preflight_msg_deco
+
+
 def with_print(pretty: bool = False, disabled: bool = False, to_stream: typing.Optional[typing.TextIO] = None):
     """Parameterized decorator; debugging helper - if enabled,
     (pretty- or regular-) prints the decorated function's return

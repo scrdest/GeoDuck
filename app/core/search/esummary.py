@@ -1,9 +1,10 @@
+import sys
 import json
 
 import requests
 
 import constants as const
-from decorators import with_print
+from app.utils.decorators import with_print
 
 
 @with_print(
@@ -57,12 +58,17 @@ def get_search_results(search_url):
     disabled=True
 )
 def parse_search_response(qry_response):
-    doc = json.loads(qry_response)
-    search_result = doc.get(const.SEARCH_RESULT_FIELD, {})
-    uids = set(search_result.get(const.SEARCH_UIDS_FIELD) or [])
-    uid_data = {
-        uID: data
-        for (uID, data) in search_result.items()
-        if uID in uids
-    }
+    uid_data = {}
+    if qry_response:
+        try:
+            doc = json.loads(qry_response)
+            search_result = doc.get(const.SEARCH_RESULT_FIELD, {})
+            uids = set(search_result.get(const.SEARCH_UIDS_FIELD) or [])
+            uid_data = {
+                uID: data
+                for (uID, data) in search_result.items()
+                if uID in uids
+            }
+        except Exception as E:
+            sys.excepthook(*sys.exc_info())
     return uid_data

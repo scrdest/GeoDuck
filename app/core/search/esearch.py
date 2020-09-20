@@ -3,8 +3,7 @@ import json
 import requests
 
 import constants as const
-from decorators import with_print
-from core.search import NcbiDbs
+from app.utils.decorators import with_print
 
 
 @with_print(
@@ -63,7 +62,7 @@ def parse_query_response(qry_response):
     return search_result
 
 
-def get_query_env(term: str, db=NcbiDbs.GDS.value) -> tuple:
+def get_query_env(term: str, db=const.DEFAULT_DB_VALUE) -> tuple:
     query_url = build_query_url(term=term, database=db, retstart=1, retmax=1)
     query_response = run_query(query_url=query_url)
 

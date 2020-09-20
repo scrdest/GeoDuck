@@ -1,9 +1,6 @@
-import time
-
 import constants as const
 from core.fetch.fetching import fetch_all
-from core.search import NcbiDbs
-from processing_backends import with_backend, process_item
+from processing_backends import process_item
 
 
 def parse_app_args(cfg: object = None, app_args: dict = None) -> dict:
@@ -80,7 +77,7 @@ def parse_app_args(cfg: object = None, app_args: dict = None) -> dict:
     )
     batch_size = const.DEFAULT_SEARCH_INCREMENT if increment is None else max(increment, 1)
 
-    results[const.MAINARG_DATABASE] = (_app_args.get(const.MAINARG_DATABASE) or NcbiDbs.GDS.value)
+    results[const.MAINARG_DATABASE] = (_app_args.get(const.MAINARG_DATABASE) or const.DEFAULT_DB_VALUE)
     results[const.MAINARG_QUERY] = qry_term
     results[const.MAINARG_BATCH_SIZE] = batch_size
     results[const.MAINARG_PROCESSING_BACKEND] = (
