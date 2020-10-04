@@ -6,10 +6,7 @@ import constants as const
 from app.utils.decorators import with_print
 
 
-@with_print(
-    pretty=False,
-    disabled=True
-)
+@with_print(pretty=False, disabled=True)
 def build_query_url(
     term=None,
     database=None,
@@ -69,4 +66,4 @@ def get_query_env(term: str, db=const.DEFAULT_DB_VALUE) -> tuple:
     response_dict = parse_query_response(query_response)
     webenv = response_dict.get(const.QUERY_WEBENV_FIELD)
     qkey = response_dict.get(const.QUERY_QRYKEY_FIELD)
-    return (webenv, qkey)
+    return webenv, qkey

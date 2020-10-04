@@ -9,10 +9,7 @@ from app.utils.decorators import with_print
 ftp_client_builder = ftplib.FTP
 
 
-@with_print(
-    pretty=True,
-    disabled=False
-)
+@with_print(pretty=True, disabled=False)
 def extract_ftp_links(search_result):
     links = {
         id: data[const.FTP_LINK_FIELD]
@@ -22,10 +19,7 @@ def extract_ftp_links(search_result):
     return links
 
 
-@with_print(
-    pretty=True,
-    disabled=False
-)
+@with_print(pretty=True, disabled=False)
 def build_matrix_ftp_url(raw_ftp_link: str) -> tuple:
     entry_name = raw_ftp_link.rstrip('/').split('/')[-1]
     protocol_adjusted_link = raw_ftp_link.replace('ftp://ftp.ncbi.nlm.nih.gov/', '', 1)

@@ -75,7 +75,6 @@ def result_to_json(filename: typing.Optional[str], disabled: bool = False):
     :param filename: Filesystem path for the JSON file to dump the data to.
     :param disabled: If True, the target function is not decorated but is returned as-is.
     """
-    import json
 
     def _jsondump_deco(func):
     

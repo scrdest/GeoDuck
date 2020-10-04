@@ -7,10 +7,7 @@ import constants as const
 from app.utils.decorators import with_print
 
 
-@with_print(
-    pretty=True,
-    disabled=True
-)
+@with_print(pretty=True, disabled=True)
 def build_search_url(
     webenv,
     query_key='',
@@ -53,10 +50,7 @@ def get_search_results(search_url):
     return result
 
 
-@with_print(
-    pretty=True,
-    disabled=True
-)
+@with_print(pretty=True, disabled=True)
 def parse_search_response(qry_response):
     uid_data = {}
     if qry_response:

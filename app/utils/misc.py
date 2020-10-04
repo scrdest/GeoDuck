@@ -33,7 +33,6 @@ def cache(disabled=False):
 def to_jsonl(iterable, base_filename=None):
     import json
     _base_filename = base_filename or os.path.join(const.OUTPUT_DIR, 'result')
-    json_stream = map(json.dumps, iterable)
 
     files = {}
     try:
