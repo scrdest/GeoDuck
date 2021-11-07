@@ -1,7 +1,7 @@
 import os
 from functools import wraps
 
-import constants as const
+import app.constants as const
 
 
 def cache(disabled=False):

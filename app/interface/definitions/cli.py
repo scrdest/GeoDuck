@@ -1,7 +1,7 @@
 import argparse
 from functools import wraps
 
-import constants as const
+import app.constants as const
 from app.utils.registry import registry_entry
 
 

@@ -1,3 +1,4 @@
+import os
 import typing
 
 REGISTRY_COLLISION_MSG = "Key {key} collides with existing entry {entry} in the {repo} registry!"
@@ -6,13 +7,28 @@ DEFAULT_REGISTRY_KEY = 'default'
 _registries = {}
 
 
+def identity_deco(target: typing.Any):
+    """A no-op decorator"""
+    return target
+
+
 def registry_entry(
     as_key: typing.Hashable,
     registry_key: typing.Optional[typing.Hashable] = None,
     registry_data: typing.Optional[dict] = None,
     warn_on_collision: bool = True,
-    halt_on_collision: bool = True
+    halt_on_collision: bool = True,
+    enabled: bool = None
 ) -> typing.Callable:
+
+    _enabled = ((
+        # Look up an envvar that disables it...
+        False if os.getenv("GEOSCRAPE_DISABLE_REGISTRIES", "").upper() == "FALSE"
+        # ...defaulting to True (enabled/not disabled)...
+        else True
+    ) if enabled is None  # ...if 'enabled' is not set explicitly...
+      else bool(enabled)  # ...because if it is, we just take the user's word for it.
+    )
 
     _repokey = registry_key or DEFAULT_REGISTRY_KEY
 
@@ -58,10 +74,13 @@ def registry_entry(
 
         return target
 
-    return _registry_deco
+    return _registry_deco if _enabled else identity_deco
 
 
 def get_registry(registry_key: typing.Optional[typing.Hashable] = None, raise_on_missing: bool = True):
+    from app import parsers
+    from app import processing_backends
+    from app import interface
     _repokey = registry_key or DEFAULT_REGISTRY_KEY
     try: retrieved = _registries[_repokey]
     except KeyError as KEr:

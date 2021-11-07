@@ -3,7 +3,7 @@ import json
 
 import requests
 
-import constants as const
+import app.constants as const
 from app.utils.decorators import with_print
 
 

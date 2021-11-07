@@ -2,13 +2,38 @@ import typing
 from functools import wraps
 from app.utils.misc import cache
 
-from abcs import AbstractProcessingBackend
-from constants import DEFAULT_BACKEND_REGISTRY_KEY, BACKEND_LOCAL, MAINARG_PROCESSING_BACKEND
+from app.abcs import AbstractProcessingBackend
+from app.constants import DEFAULT_BACKEND_REGISTRY_KEY, BACKEND_LOCAL, BACKEND_SPARK, MAINARG_PROCESSING_BACKEND
 from app.utils.registry import get_registry
 
 
 @cache()
 def get_backend(
+    backend_key: typing.Hashable,
+    *args, **kwargs
+) -> typing.Type[AbstractProcessingBackend]:
+    """Returns a processing backend framework, e.g. Spark, Pandas...
+    Fails if the queried key does not match a registered backend.
+
+    :param backend_key: Hashable matching the key used to register the backend in the repository
+    """
+    # Simplified version of get_backend_fancy() - more maintenance overhead for adding new backends,
+    # but far easier to debug in terms of existing ones because there's less indirection and no
+    # Fancy Dynamic Loading (TM).
+    from app.processing_backends.definitions import local as local_backend
+    from app.processing_backends.definitions import spark as spark_backend
+
+    backend_keymap = {
+        BACKEND_LOCAL: local_backend.LocalProcessingBackend,
+        BACKEND_SPARK: spark_backend.SparkProcessingBackend
+    }
+
+    parser = backend_keymap[backend_key]
+    return parser
+
+
+@cache()
+def get_backend_fancy(
     backend_key: typing.Hashable,
     registry_key: typing.Optional[typing.Hashable] = None,
     *args, **kwargs
@@ -27,11 +52,21 @@ def get_backend(
 
 
 def process_item(
-    backend: typing.Hashable = BACKEND_LOCAL,
+    backend_key: typing.Hashable = BACKEND_LOCAL,
     *args, **kwargs
 ):
-    backend = get_backend(backend_key=backend)
-    output = backend.process_item(*args, **kwargs)
+    backend = get_backend(backend_key=backend_key)
+    output = backend.extract_item(*args, **kwargs)
+    return output
+
+
+def normalize_data(
+    extracted: typing.Dict[str, tuple],
+    backend_key: typing.Hashable = BACKEND_LOCAL,
+    *args, **kwargs
+):
+    backend = get_backend(backend_key=backend_key)
+    output = backend.normalize_item(extracted=extracted, *args, **kwargs)
     return output
 
 

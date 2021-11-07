@@ -1,10 +1,12 @@
 import itertools
+import os
 import typing
 
-import constants as const
+import app.constants as const
 import app.utils.spark as sparkutils
 from app.utils.decorators import preflight_message
 
+SparkProcessingBackend = NotImplemented
 
 if sparkutils.SPARK_SUPPORT:
     from pyspark.sql import DataFrame, SparkSession
@@ -16,6 +18,16 @@ if sparkutils.SPARK_SUPPORT:
     @registry_entry(as_key=const.BACKEND_SPARK, registry_key=const.DEFAULT_BACKEND_REGISTRY_KEY)
     class SparkProcessingBackend(AbstractProcessingBackend):
         """A backend using Apache Spark for processing the data."""
+
+        @classmethod
+        def save_extracted(cls, extracted, file: typing.Optional[os.PathLike] = None, *args, **kwargs) -> os.PathLike:
+            """Write out the results of extract_item to a file."""
+
+
+        @classmethod
+        def save_normalized(cls, normalized, file: typing.Optional[os.PathLike] = None, *args, **kwargs) -> os.PathLike:
+            """Write out the results of normalize_item to a file."""
+
 
         @classmethod
         def _load_handler(cls, session, source_path, csv_options):
@@ -30,11 +42,11 @@ if sparkutils.SPARK_SUPPORT:
         @classmethod
         def load_csv(
             cls,
-            files: typing.Iterable[typing.Tuple[str, str]],
+            files: typing.Iterable[typing.Tuple[str, DataFrame, str]],
             session: typing.Optional[SparkSession] = None,
             csv_options: typing.Optional[dict] = None,
             *args, **kwargs
-        ) -> typing.Generator[typing.Tuple[str, DataFrame], None, int]:
+        ) -> typing.Generator[typing.Tuple[str, DataFrame, DataFrame], None, int]:
 
             """A low-level workflow for extracting CSVs from NCBI GEO.
 
@@ -52,7 +64,7 @@ if sparkutils.SPARK_SUPPORT:
 
             processed_count = 0
 
-            for src_fname, trg_fnames in files:
+            for src_fname, metadata_df, trg_fnames in files:
                 _trg_fnames = (trg_fnames,) if isinstance(trg_fnames, str) else trg_fnames
 
                 for source_path in _trg_fnames:
@@ -65,7 +77,7 @@ if sparkutils.SPARK_SUPPORT:
                         csv_options=_csv_options
                     )
 
-                    yield source_path, datum_raw
+                    yield source_path, metadata_df, datum_raw
 
             return processed_count
 
@@ -98,7 +110,7 @@ if sparkutils.SPARK_SUPPORT:
             )
 
             file_urls = [
-                (src_name, f'ftp://anonymous:anonymous@ftp.ncbi.nlm.nih.gov/{baseaddr}{trg_name}')
+                (src_name, None, f'ftp://anonymous:anonymous@ftp.ncbi.nlm.nih.gov/{baseaddr}{trg_name}')
                 for src_name, trg_name in files
             ]
 
@@ -112,7 +124,7 @@ if sparkutils.SPARK_SUPPORT:
 
             processed_count = 0
 
-            for filename, dataframe in raw_metadata_loader:
+            for filename, _, dataframe in raw_metadata_loader:
                 processed_count += 1
                 print(f"Processing metadata file: {filename}")
                 yield filename, dataframe
@@ -121,7 +133,7 @@ if sparkutils.SPARK_SUPPORT:
 
 
         @classmethod
-        def extract_data_files(
+        def extract_data_files_from_metadata(
             cls,
             metadata_stream: typing.Generator[typing.Tuple[str, DataFrame], None, int]
         ) -> typing.Generator[typing.Tuple[str, DataFrame], None, int]:
@@ -132,7 +144,7 @@ if sparkutils.SPARK_SUPPORT:
 
                 relevant_rows = (
                     src_df.filter(
-                        src_df._c0.contains('!Sample_supplementary_file')
+                        src_df._c0.like('!Sample_supplementary_file')
                     )
                 )
 
@@ -149,7 +161,7 @@ if sparkutils.SPARK_SUPPORT:
                 )
 
                 addresses = [addr for addr in raw_addresses if '.' in addr]
-                yield src_fname, addresses
+                yield src_fname, src_df, addresses
 
             return processed
 
@@ -188,7 +200,7 @@ if sparkutils.SPARK_SUPPORT:
 
             data_files = preflight_message(
                 f"Extracting data URLs from the metadata stream..."
-                )(cls.extract_data_files)(
+                )(cls.extract_data_files_from_metadata)(
                     metadata_stream=_metadata_stream
                 )
 
@@ -201,13 +213,13 @@ if sparkutils.SPARK_SUPPORT:
                     **kwargs
                 )
 
-            data = {src_fname: data_df for src_fname, data_df in raw_data}
+            data = {src_fname: (data_df, meta_df) for (src_fname, meta_df, data_df) in raw_data}
             _dbg_iter = iter(data.values())  # to inspect stuff in debugger neatly
             return data
 
 
         @classmethod
-        def process_item(cls, addr: str, fname: str, *args, **kwargs):
+        def extract_item(cls, addr: str, fname: str, *args, **kwargs):
             """The main processing pipeline for a single source URL.
 
             :param addr: Path to the source FTP directory
@@ -215,7 +227,8 @@ if sparkutils.SPARK_SUPPORT:
             """
             matrix_metadata_files = [
                 (matrixfile, matrixfile)
-                for (matrixfile, metadata) in ftp_listdir(address=addr)
+                for (matrixfile, metadata)
+                in ftp_listdir(address=addr)
                 if matrixfile and fname in matrixfile
             ]
             session = sparkutils.get_spark_session()
@@ -233,3 +246,7 @@ if sparkutils.SPARK_SUPPORT:
             except AnalysisException as AnEx: print(AnEx)
 
             return data
+
+        @classmethod
+        def normalize_item(cls, extracted, *args, **kwargs) -> typing.Any:
+            return extracted

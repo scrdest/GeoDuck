@@ -1,6 +1,6 @@
 import os
-import constants as const
-from constants import DEFAULT_PARSER_REGISTRY_KEY
+import app.constants as const
+from app.constants import DEFAULT_PARSER_REGISTRY_KEY
 from app.utils.registry import get_registry
 
 DEFINITIONS_DIR_NAME = 'definitions'

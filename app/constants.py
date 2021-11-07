@@ -33,6 +33,9 @@ DEFAULT_INTERFACE_REGISTRY_KEY = 'interface'
 DEFAULT_BACKEND_REGISTRY_KEY = 'backends'
 DEFAULT_PARSER_REGISTRY_KEY = 'parsers'
 
+DEFAULT_EXTRACTED_SAVE_FILENAME = "extracted.txt"
+DEFAULT_NORMALIZED_SAVE_FILENAME = "normalized.txt"
+
 ARG_INTERFACE = 'AppInterface'
 
 MAINARG_QUERY = 'Query'
@@ -43,12 +46,16 @@ MAINARG_INCREMENT = 'increment'
 MAINARG_BATCH_SIZE = 'batch_size'
 MAINARG_PROCESSING_BACKEND = 'processing_backend'
 MAINARG_DRY_RUN = 'dry_run'
+MAINARG_SAVE_DOWNLOADED = 'save_downloaded'
+MAINARG_SAVE_NORMALIZED = 'save_normalized'
 
 INTERFACE_NONE = 'none'
 INTERFACE_CLI = 'cli'
 
 BACKEND_LOCAL = 'local'
 BACKEND_SPARK = 'pyspark'
+
+PARSER_GENERIC = 'generic'
 
 BASE_NCBI_QUERY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 NCBI_QUERY_URL_TEMPLATE = "{query_base}?{params}"

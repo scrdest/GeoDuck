@@ -2,7 +2,7 @@ from functools import wraps
 
 from prompt_toolkit import Application
 
-import constants as const
+import app.constants as const
 from app.utils.registry import registry_entry
 
 

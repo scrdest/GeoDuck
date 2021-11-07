@@ -1,16 +1,18 @@
 import ftplib
 import tempfile
+import typing
 
 from smart_open import open
 
-import constants as const
+import app.constants as const
 from app.utils.decorators import with_print
 
 ftp_client_builder = ftplib.FTP
+FtpClientType = ftplib.FTP
 
 
 @with_print(pretty=True, disabled=False)
-def extract_ftp_links(search_result):
+def extract_ftp_links(search_result) -> typing.Dict[typing.Hashable, dict]:
     links = {
         id: data[const.FTP_LINK_FIELD]
         for (id, data) in search_result.items()
@@ -20,7 +22,7 @@ def extract_ftp_links(search_result):
 
 
 @with_print(pretty=True, disabled=False)
-def build_matrix_ftp_url(raw_ftp_link: str) -> tuple:
+def build_matrix_ftp_url(raw_ftp_link: str) -> typing.Tuple[str, str]:
     entry_name = raw_ftp_link.rstrip('/').split('/')[-1]
     protocol_adjusted_link = raw_ftp_link.replace('ftp://ftp.ncbi.nlm.nih.gov/', '', 1)
     download_ftp_path = ''.join((protocol_adjusted_link, 'matrix/'))
@@ -29,17 +31,22 @@ def build_matrix_ftp_url(raw_ftp_link: str) -> tuple:
 
 
 class FTPReader:
-    def __init__(self, fname=None):
+    def __init__(self, fname: typing.Optional[str] = None):
         self.fname = fname
         self.storage = tempfile.NamedTemporaryFile()
 
-    def ftp_read(self, data):
+    def ftp_read(self, data: typing.AnyStr) -> typing.NoReturn:
         self.storage.write(data)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> typing.NoReturn:
         self.ftp_read(*args, **kwargs)
 
-    def parse_to_raw_result(self, datastream=None, filename=None):
+    def parse_to_raw_result(
+        self,
+        datastream: typing.Optional[typing.IO] = None,
+        filename: typing.Optional[str] = None
+    ) -> typing.AnyStr:
+
         from gzip import GzipFile
         result = None
         _data = datastream or self.storage
@@ -63,20 +70,20 @@ class FTPReader:
         return result
 
 
-def rebuild_client():
+def rebuild_client() -> FtpClientType:
     client = ftp_client_builder('ftp.ncbi.nlm.nih.gov')
     client.login()
     return client
 
 
-def ftp_switchcwd(address, ftp_client):
+def ftp_switchcwd(address: str, ftp_client: FtpClientType) -> bool:
     ftp_client.cwd('/')
     for subdir in address.split('/'):
         ftp_client.cwd(subdir)
     return True
 
 
-def ftp_listdir(address, client=None):
+def ftp_listdir(address, client: typing.Optional[FtpClientType] = None) -> typing.List[typing.Tuple[str, typing.Union[dict, typing.Any]]]:
     ftp_client = client or rebuild_client()
     err = None
     results = None
@@ -93,7 +100,10 @@ def ftp_listdir(address, client=None):
             # we created one, so we're closing it
             ftp_client.close()
 
-    return ([], err) if err else results
+    if err:
+        results = [('', err)]
+
+    return results
 
 
 def fetch_ftp(address, filename, client=None):
@@ -110,15 +120,23 @@ def fetch_ftp(address, filename, client=None):
                 reader = FTPReader(address + target)
 
                 try:
-                    ftp_client.retrbinary(f'RETR {target}', reader)
+                    # The callback accumulates blocks of data in an IO object here
+                    ftp_client.retrbinary(cmd=f'RETR {target}', callback=reader.ftp_read)
 
                 except ftplib.error_temp:
                     ftp_client = rebuild_client()
-                    ftp_client.retrbinary(f'RETR {target}', reader)
+                    ftp_client.retrbinary(cmd=f'RETR {target}', callback=reader.ftp_read)
 
+                # Since the FTP reads are (sadly) stateful, the
+                # data to parse is smuggled in the state here:
                 result = reader.parse_to_raw_result()
+                if not result:
+                    raise ValueError(f"Failed to parse the results for {target}")
 
     except ftplib.error_perm as E:
+        err = E
+
+    except ValueError as E:
         err = E
 
     finally:

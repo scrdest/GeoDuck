@@ -1,7 +1,7 @@
 import os
 import typing
 
-from constants import DEFAULT_PARSER_REGISTRY_KEY
+from app.constants import DEFAULT_PARSER_REGISTRY_KEY
 from app.utils.registry import get_registry
 
 
@@ -32,6 +32,6 @@ def parse_format(
     *args, **kwargs
 ):
     parser = get_parser(fmt_key=dataformat)
-    output = parser.parse(data, *args, **kwargs)
+    output = parser(data, *args, **kwargs)
     return output
 

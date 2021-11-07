@@ -1,8 +1,8 @@
 import argparse
 import typing
 
-import constants as const
-from constants import DEFAULT_INTERFACE_REGISTRY_KEY
+import app.constants as const
+from app.constants import DEFAULT_INTERFACE_REGISTRY_KEY
 from app.utils.registry import get_registry
 
 

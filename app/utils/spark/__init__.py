@@ -1,4 +1,4 @@
-import constants as const
+import app.constants as const
 from app.utils.misc import cache
 
 SPARK_SUPPORT = False

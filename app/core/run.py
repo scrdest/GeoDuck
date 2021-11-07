@@ -1,4 +1,3 @@
-import os
 
 import app.constants as constants
 
@@ -14,7 +13,7 @@ def run(cfg=None):
     target_interface_key = cfg.interface if cfg else None
     interface = get_interface(target_interface_key)
 
-    target_backend_key = cfg.backend if cfg else constants.BACKEND_SPARK
+    target_backend_key = cfg.backend if cfg else constants.BACKEND_LOCAL
     backend = with_backend(target_backend_key)
     wrapped_main = interface(
         backend(

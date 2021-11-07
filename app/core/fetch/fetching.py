@@ -1,5 +1,5 @@
-import constants as const
-from core.search import esummary, esearch
+import app.constants as const
+from app.core.search import esummary, esearch
 from app.utils.ftp import extract_ftp_links, build_matrix_ftp_url
 
 
