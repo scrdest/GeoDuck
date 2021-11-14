@@ -1,3 +1,4 @@
+import os
 import typing
 import app.constants as const
 from app.core.fetch.fetching import fetch_all
@@ -51,13 +52,13 @@ def parse_app_args(cfg: object = None, ui_args: dict = None) -> dict:
 
     # Supplementary file format (e.g. CEL, GPR, WIG... - to filter down to only what we can parse)
     fileformat = (
-            None  # TODO: add CLI arg for it
-            or (
-                cfg.query.fileformat
-                if cfg and cfg.query
-                else None
-            )
-            or 'csv'
+        None  # TODO: add CLI arg for it
+        or (
+            cfg.query.fileformat
+            if cfg and cfg.query
+            else None
+        )
+        or 'csv'
     )
     fileformat_query = '{fileformat}[Supplementary Files]'.format(fileformat=fileformat) if fileformat else None
 
@@ -92,6 +93,8 @@ def parse_app_args(cfg: object = None, ui_args: dict = None) -> dict:
     )
     results[const.MAINARG_PRECALCULATED_SOURCES] = dict(cfg.accession_numbers) if (cfg and cfg.accession_numbers) else None
     results[const.MAINARG_DRY_RUN] = bool(cfg.dry_run) if (cfg and cfg.dry_run) else False
+    results[const.MAINARG_SAVE_DOWNLOADED] = _app_args.get(const.MAINARG_SAVE_DOWNLOADED, False)
+    results[const.MAINARG_SAVE_NORMALIZED] = _app_args.get(const.MAINARG_SAVE_NORMALIZED, False)
 
     return results
 
@@ -118,8 +121,8 @@ def get_fetcher(app_args: dict) -> typing.Iterable[typing.Mapping]:
     return fetcher
 
 
-def main(cfg=None, **kwargs):
-    """Root of the pipeline.
+def coreloop(cfg=None, **kwargs):
+    """Core loop of the pipeline.
 
     Purely programmatic - human-friendly UIs can slot into it by creating adapters
     that inject kwargs into this function.
@@ -149,8 +152,16 @@ def main(cfg=None, **kwargs):
                 )
 
                 if save_downloaded:
-                    extracted_savepath = backend.save_extracted(extracted=extracted)
+                    in_savedir = os.path.join(
+                        const.ROOT_DIR,
+                        "outputs",
+                        "extracted",
+                    )
+                    os.makedirs(in_savedir, exist_ok=True)
+                    in_savepath = os.path.join(in_savedir, randfile + ".json")
+                    extracted_savepath = backend.save_extracted(extracted=extracted, file=in_savepath)
                     print(f"Extracted data saved to {extracted_savepath} successfully.")
+                    yield extracted_savepath
                     continue
 
                 normalized = backend.normalize_item(
@@ -159,9 +170,35 @@ def main(cfg=None, **kwargs):
                 )
 
                 if save_normalized:
-                    normalized_savepath = backend.save_normalized(normalized=normalized)
+                    in_savedir = os.path.join(
+                        const.ROOT_DIR,
+                        "outputs",
+                        "normalized",
+                    )
+                    os.makedirs(in_savedir, exist_ok=True)
+                    in_savepath = os.path.join(in_savedir, randfile + ".json")
+                    normalized_savepath = backend.save_normalized(
+                        normalized=normalized,
+                        file=in_savepath
+                    )
                     print(f"Normalized data saved to {normalized_savepath} successfully.")
+                    yield normalized_savepath
                     continue
+
+                yield normalized
 
     else: print("Dry Run!")
     return True
+
+
+def main(cfg=None, **kwargs):
+    """Root of the pipeline.
+
+    Purely programmatic - human-friendly UIs can slot into it by creating adapters
+    that inject kwargs into this function.
+
+    All supported parameter keys are constants with the `MAINARG_` prefix.
+    """
+    loop = coreloop(cfg=cfg, **kwargs)
+    for data in loop:
+        pass

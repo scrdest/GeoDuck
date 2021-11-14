@@ -12,6 +12,7 @@ smart-open = "*"
 pyspark = {version="*"}
 hydra-core = "*"
 prompt-toolkit = "*"
+invoke = "*"
 
 [requires]
 python_version = "3.7"
