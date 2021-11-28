@@ -4,9 +4,10 @@ import json
 import requests
 
 import app.constants as const
-from app.utils.decorators import with_print
+from app.utils.decorators import with_print, with_logging
 
 
+@with_logging(pretty=False, disabled=True)
 @with_print(pretty=True, disabled=True)
 def build_search_url(
     webenv,
@@ -44,12 +45,14 @@ def build_search_url(
     return req_url
 
 
+@with_logging(pretty=False, disabled=True)
 @with_print(pretty=True, disabled=True)
 def get_search_results(search_url):
     result = requests.get(search_url).text
     return result
 
 
+@with_logging(pretty=False, disabled=True)
 @with_print(pretty=True, disabled=True)
 def parse_search_response(qry_response):
     uid_data = {}

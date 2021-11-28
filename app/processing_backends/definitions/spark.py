@@ -5,13 +5,14 @@ import typing
 import app.constants as const
 import app.utils.spark as sparkutils
 from app.utils.decorators import preflight_message
+from app.utils.logs import logger
 
 SparkProcessingBackend = NotImplemented
 
-if sparkutils.SPARK_SUPPORT:
+if sparkutils.SPARK_SUPPORT and False:
     from pyspark.sql import DataFrame, SparkSession
     from pyspark.sql.utils import AnalysisException
-    from abcs import AbstractProcessingBackend
+    from app.abcs import AbstractProcessingBackend
     from app.utils.registry import registry_entry
     from app.utils.ftp import ftp_listdir
 
@@ -126,7 +127,7 @@ if sparkutils.SPARK_SUPPORT:
 
             for filename, _, dataframe in raw_metadata_loader:
                 processed_count += 1
-                print(f"Processing metadata file: {filename}")
+                logger.info(f"Processing metadata file: {filename}")
                 yield filename, dataframe
 
             return processed_count
@@ -239,11 +240,11 @@ if sparkutils.SPARK_SUPPORT:
                     files=matrix_metadata_files,
                     session=session
                 )
-            except AnalysisException as AnEx: print(AnEx)
+            except AnalysisException as AnEx: logger.exception(AnEx)
 
             data = None
             try: data = cls.load_data(baseaddr=addr, metadata_stream=metadata_loader, session=session)
-            except AnalysisException as AnEx: print(AnEx)
+            except AnalysisException as AnEx: logger.exception(AnEx)
 
             return data
 

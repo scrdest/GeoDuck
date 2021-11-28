@@ -1,5 +1,6 @@
 import os
 import typing
+import logging
 
 REGISTRY_COLLISION_MSG = "Key {key} collides with existing entry {entry} in the {repo} registry!"
 DEFAULT_REGISTRY_KEY = 'default'
@@ -64,12 +65,15 @@ def registry_entry(
                 )
 
             elif warn_on_collision:
-                print(
+                # Not using the app logger here on purpose,
+                # to avoid circular import issues
+                logging.error(
                     REGISTRY_COLLISION_MSG.format(
                         key=as_key,
                         entry=curr_entry,
                         repo=_repokey
-                    )
+                    ),
+                    stack_info=True
                 )
 
         return target
