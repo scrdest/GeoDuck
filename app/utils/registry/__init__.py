@@ -78,9 +78,10 @@ def registry_entry(
 
 
 def get_registry(registry_key: typing.Optional[typing.Hashable] = None, raise_on_missing: bool = True):
-    from app import parsers
-    from app import processing_backends
-    from app import interface
+    # Black magic to ensure autoscan of the modules
+    # noinspection PyUnresolvedReferences
+    from app import parsers, processing_backends, interface
+
     _repokey = registry_key or DEFAULT_REGISTRY_KEY
     try: retrieved = _registries[_repokey]
     except KeyError as KEr:

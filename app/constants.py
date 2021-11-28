@@ -9,6 +9,8 @@ CONFIG_DIR = os.path.join(ROOT_DIR, 'config')
 OUTPUT_DIR = os.path.join(ROOT_DIR, 'results')
 BASE_DIR = os.path.dirname(ROOT_DIR)
 
+ENV_DEFAULT_TO_BASIC_CLI = "GDUCK_USE_CLI_FALLBACK"
+
 if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
@@ -23,7 +25,8 @@ class NcbiDbs(enum.Enum):
 DEFAULT_DB_VALUE = NcbiDbs.DataSets.value
 
 ENV_CONFIGNAME_KEY = 'config_name'
-DEFAULT_CONFIG_FILENAME = os.path.join('config', 'config.yaml')
+DEFAULT_CONFIG_DIR = os.path.join(ROOT_DIR, 'config')
+DEFAULT_CONFIG_FILENAME = 'config.yaml'
 
 
 DEFAULT_QUERY_INCREMENT = 1
@@ -51,6 +54,7 @@ MAINARG_SAVE_NORMALIZED = 'save_normalized'
 
 INTERFACE_NONE = 'none'
 INTERFACE_CLI = 'cli'
+INTERFACE_INVOKE = 'invoke'
 
 BACKEND_LOCAL = 'local'
 BACKEND_SPARK = 'pyspark'

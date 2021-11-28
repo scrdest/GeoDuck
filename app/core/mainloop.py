@@ -5,14 +5,15 @@ from app.core.fetch.fetching import fetch_all
 from app.processing_backends import get_backend
 
 
-def parse_app_args(cfg: object = None, ui_args: dict = None) -> dict:
+def parse_app_args(config: object = None, ui_args: dict = None) -> dict:
     """Cleans, infers, defaults, and translates the app arguments for main() from raw UI args.
     A UI -> core adapter, in other words.
 
-    :param cfg: Configuration instance
+    :param config: Configuration instance
     :param app_args: Raw parameters from the UI, as a dict.
     """
     _app_args = ui_args or dict()
+    cfg = config or dict()
 
     # Any required keywords (ANDed together!) in the free text search over all categories
     free_text_query = (
@@ -20,45 +21,29 @@ def parse_app_args(cfg: object = None, ui_args: dict = None) -> dict:
             _app_args.get(const.MAINARG_QUERY)
             or []
         ))
-        or (
-            # deliberately OUTSIDE of the join() to allow more customization
-            cfg.query.text
-            if cfg and cfg.query
-            else None
-        )
+        # deliberately OUTSIDE of the join() to allow more customization
+        or cfg.get("query", {}).get("text", None)
     )
 
     # Species (e.g. Homo Sapiens or S. Cerevisiae)
     species = (
-        _app_args.get(const.MAINARG_ORGANISM)
-        or (
-            cfg.query.organism
-            if cfg and cfg.query
-            else None
-        )
+            _app_args.get(const.MAINARG_ORGANISM)
+            or cfg.get("query", {}).get("organism", None)
     )
     species_query = '{species}[Organism]'.format(species=species) if species else None
 
     # Entry type (DataSet, Series, Samples, Platforms...)
     entrytype = (
-        None  # TODO: add CLI arg for it
-        or (
-            cfg.query.entrytype
-            if cfg and cfg.query
-            else None
-        )
+            None  # TODO: add CLI arg for it
+            or cfg.get("query", {}).get("entrytype", None)
     )
     entrytype_query = '{entrytype}[EntryType]'.format(entrytype=entrytype) if entrytype else None
 
     # Supplementary file format (e.g. CEL, GPR, WIG... - to filter down to only what we can parse)
     fileformat = (
-        None  # TODO: add CLI arg for it
-        or (
-            cfg.query.fileformat
-            if cfg and cfg.query
-            else None
-        )
-        or 'csv'
+            None  # TODO: add CLI arg for it
+            or cfg.get("query", {}).get("fileformat", None)
+            or 'csv'
     )
     fileformat_query = '{fileformat}[Supplementary Files]'.format(fileformat=fileformat) if fileformat else None
 
@@ -75,7 +60,7 @@ def parse_app_args(cfg: object = None, ui_args: dict = None) -> dict:
     # Customizing the search formatting
     increment = (
         _app_args.get(const.MAINARG_INCREMENT)
-        or (cfg.batch_size if cfg else None)
+        or (cfg.get("batch_size") if cfg else None)
         or const.DEFAULT_SEARCH_INCREMENT
     )
     batch_size = const.DEFAULT_SEARCH_INCREMENT if increment is None else max(increment, 1)
@@ -88,11 +73,11 @@ def parse_app_args(cfg: object = None, ui_args: dict = None) -> dict:
     results[const.MAINARG_BATCH_SIZE] = batch_size
     results[const.MAINARG_PROCESSING_BACKEND] = (
         _app_args.get(const.MAINARG_PROCESSING_BACKEND)
-        or (cfg.backend if cfg else None)
+        or (cfg.get("backend")if cfg else None)
         or const.BACKEND_LOCAL
     )
-    results[const.MAINARG_PRECALCULATED_SOURCES] = dict(cfg.accession_numbers) if (cfg and cfg.accession_numbers) else None
-    results[const.MAINARG_DRY_RUN] = bool(cfg.dry_run) if (cfg and cfg.dry_run) else False
+    results[const.MAINARG_PRECALCULATED_SOURCES] = dict(cfg.get("accession_numbers", {})) if cfg else None
+    results[const.MAINARG_DRY_RUN] = bool(cfg.get("dry_run")) if cfg else False
     results[const.MAINARG_SAVE_DOWNLOADED] = _app_args.get(const.MAINARG_SAVE_DOWNLOADED, False)
     results[const.MAINARG_SAVE_NORMALIZED] = _app_args.get(const.MAINARG_SAVE_NORMALIZED, False)
 
@@ -121,6 +106,62 @@ def get_fetcher(app_args: dict) -> typing.Iterable[typing.Mapping]:
     return fetcher
 
 
+def process_item(
+    addr,
+    fname,
+    backend,
+    save_downloaded=False,
+    save_normalized=False
+):
+    # Download:
+    extracted = backend.extract_item(
+        backend_key=backend,
+        addr=addr,
+        fname=fname
+    )
+
+    if save_downloaded:
+        in_savedir = os.path.join(
+            const.BASE_DIR,
+            "outputs",
+            "extracted",
+        )
+        os.makedirs(in_savedir, exist_ok=True)
+        in_savepath = os.path.join(in_savedir, f"{fname}.json")
+
+        extracted_savepath = backend.save_extracted(
+            extracted=extracted,
+            file=in_savepath
+        )
+
+        print(f"Extracted data saved to {extracted_savepath} successfully.")
+        return extracted_savepath
+
+    # Transform:
+    normalized = backend.normalize_item(
+        extracted=extracted,
+    )
+
+    if save_normalized:
+        in_savedir = os.path.join(
+            const.BASE_DIR,
+            "outputs",
+            "normalized",
+        )
+        os.makedirs(in_savedir, exist_ok=True)
+        in_savepath = os.path.join(in_savedir, f"{fname}.json")
+
+        normalized_savepath = backend.save_normalized(
+            normalized=normalized,
+            file=in_savepath
+        )
+
+        print(f"Normalized data saved to {normalized_savepath} successfully.")
+        return normalized_savepath
+
+    return normalized
+
+
 def coreloop(cfg=None, **kwargs):
     """Core loop of the pipeline.
 
@@ -129,7 +170,7 @@ def coreloop(cfg=None, **kwargs):
 
     All supported parameter keys are constants with the `MAINARG_` prefix.
     """
-    app_args = parse_app_args(cfg=cfg, ui_args=kwargs)
+    app_args = parse_app_args(config=cfg, ui_args=kwargs)
     backend_key = app_args[const.MAINARG_PROCESSING_BACKEND]
     dry_run = app_args.get(const.MAINARG_DRY_RUN, False)
     save_downloaded = app_args.get(const.MAINARG_SAVE_DOWNLOADED, False)
@@ -145,47 +186,14 @@ def coreloop(cfg=None, **kwargs):
             batch = next(fetcher, None)
 
             for randaddr, randfile in batch.values():
-                extracted = backend.extract_item(
-                    backend_key=backend,
+                output = process_item(
                     addr=randaddr,
-                    fname=randfile
+                    fname=randfile,
+                    backend=backend,
+                    save_downloaded=save_downloaded,
+                    save_normalized=save_normalized
                 )
-
-                if save_downloaded:
-                    in_savedir = os.path.join(
-                        const.ROOT_DIR,
-                        "outputs",
-                        "extracted",
-                    )
-                    os.makedirs(in_savedir, exist_ok=True)
-                    in_savepath = os.path.join(in_savedir, randfile + ".json")
-                    extracted_savepath = backend.save_extracted(extracted=extracted, file=in_savepath)
-                    print(f"Extracted data saved to {extracted_savepath} successfully.")
-                    yield extracted_savepath
-                    continue
-
-                normalized = backend.normalize_item(
-                    extracted=extracted,
-                    backend_key=backend_key
-                )
-
-                if save_normalized:
-                    in_savedir = os.path.join(
-                        const.ROOT_DIR,
-                        "outputs",
-                        "normalized",
-                    )
-                    os.makedirs(in_savedir, exist_ok=True)
-                    in_savepath = os.path.join(in_savedir, randfile + ".json")
-                    normalized_savepath = backend.save_normalized(
-                        normalized=normalized,
-                        file=in_savepath
-                    )
-                    print(f"Normalized data saved to {normalized_savepath} successfully.")
-                    yield normalized_savepath
-                    continue
-
-                yield normalized
+                yield output
 
     else: print("Dry Run!")
     return True

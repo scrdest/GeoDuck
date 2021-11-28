@@ -91,7 +91,8 @@ class LocalProcessingBackend(AbstractProcessingBackend):
         )
 
         # Preprocessing pipeline (lazy, unless passed 'reify=True'):
-        data_lines = tumap(lambda itm: itm.split("\n"), data_items)
+        safe_data_items = tufilter(None, data_items)
+        data_lines = tumap(lambda itm: itm.split("\n"), safe_data_items)
         nonempty_lines = tufilter(None, data_lines)
         columns = tumap(lambda l: tumap(lambda x: x.split('\t'), l), nonempty_lines)
         key_valued = tumap(lambda c: tumap(parse_exclamation_as_key, c), columns)
@@ -151,7 +152,14 @@ class LocalProcessingBackend(AbstractProcessingBackend):
 
 
     @classmethod
-    def save_normalized(cls, normalized: str, file: typing.Optional[os.PathLike] = None, *args, **kwargs) -> os.PathLike:
+    def save_normalized(
+        cls,
+        normalized: str,
+        file: typing.Optional[os.PathLike] = None,
+        *args,
+        **kwargs
+    ) -> os.PathLike:
+
         """Write out the results of normalize_item to a file."""
         _filepath = file or const.DEFAULT_NORMALIZED_SAVE_FILENAME
         import json
