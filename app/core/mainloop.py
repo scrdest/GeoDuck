@@ -1,8 +1,10 @@
 import os
 import typing
+
 import app.constants as const
 from app.core.fetch.fetching import fetch_all
 from app.processing_backends import get_backend
+from app.utils.logs import logger
 
 
 def parse_app_args(config: object = None, ui_args: dict = None) -> dict:
@@ -10,7 +12,7 @@ def parse_app_args(config: object = None, ui_args: dict = None) -> dict:
     A UI -> core adapter, in other words.
 
     :param config: Configuration instance
-    :param app_args: Raw parameters from the UI, as a dict.
+    :param ui_args: Raw parameters from the UI, as a dict.
     """
     _app_args = ui_args or dict()
     cfg = config or dict()
@@ -134,7 +136,7 @@ def process_item(
             file=in_savepath
         )
 
-        print(f"Extracted data saved to {extracted_savepath} successfully.")
+        logger.info(f"Extracted data saved to {extracted_savepath} successfully.")
         return extracted_savepath
 
     # Transform:
@@ -156,7 +158,7 @@ def process_item(
             file=in_savepath
         )
 
-        print(f"Normalized data saved to {normalized_savepath} successfully.")
+        logger.info(f"Normalized data saved to {normalized_savepath} successfully.")
         return normalized_savepath
 
     return normalized
@@ -195,7 +197,7 @@ def coreloop(cfg=None, **kwargs):
                 )
                 yield output
 
-    else: print("Dry Run!")
+    else: logger.warn("Dry Run!")
     return True
 
 

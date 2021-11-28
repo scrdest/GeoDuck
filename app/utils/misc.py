@@ -2,6 +2,7 @@ import os
 from functools import wraps
 
 import app.constants as const
+from app.utils.logs import logger
 
 
 def cache(disabled=False):
@@ -37,7 +38,7 @@ def to_jsonl(iterable, base_filename=None):
     files = {}
     try:
         for (idx, item) in enumerate(iterable):
-            print(idx)
+            logger(idx)
             filename = '{base}_{num}.json'.format(
                 base=_base_filename,
                 num=(idx // 1000)

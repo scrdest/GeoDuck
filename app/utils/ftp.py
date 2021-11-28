@@ -5,13 +5,15 @@ import typing
 from smart_open import open
 
 import app.constants as const
-from app.utils.decorators import with_print
+from app.utils.decorators import with_print, with_logging
+from app.utils.logs import logger
 
 ftp_client_builder = ftplib.FTP
 FtpClientType = ftplib.FTP
 
 
-@with_print(pretty=True, disabled=False)
+@with_logging(pretty=True, disabled=False)
+@with_print(pretty=True, disabled=True)
 def extract_ftp_links(search_result) -> typing.Dict[typing.Hashable, dict]:
     links = {
         id: data[const.FTP_LINK_FIELD]
@@ -21,7 +23,8 @@ def extract_ftp_links(search_result) -> typing.Dict[typing.Hashable, dict]:
     return links
 
 
-@with_print(pretty=True, disabled=False)
+@with_logging(pretty=True, disabled=False)
+@with_print(pretty=True, disabled=True)
 def build_matrix_ftp_url(raw_ftp_link: str) -> typing.Tuple[str, str]:
     entry_name = raw_ftp_link.rstrip('/').split('/')[-1]
     protocol_adjusted_link = raw_ftp_link.replace('ftp://ftp.ncbi.nlm.nih.gov/', '', 1)
@@ -52,7 +55,7 @@ class FTPReader:
         _data = datastream or self.storage
         fname = filename or self.fname
         if fname:
-            print(fname)
+            logger.info(f"Processing filename: {fname}")
 
         try:
             _data.seek(0)
@@ -62,7 +65,7 @@ class FTPReader:
                 result = zipdata.read()
 
         except Exception as E:
-            print(E)
+            logger.exception(E)
 
         finally:
             self.storage.close()

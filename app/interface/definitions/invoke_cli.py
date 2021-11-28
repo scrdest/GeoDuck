@@ -4,6 +4,7 @@ import app.constants as const
 
 from app.core import mainloop
 from app.utils.registry import registry_entry
+from app.utils.logs import logger
 
 VERSION_FILEPATH = os.path.join(const.BASE_DIR, "version.txt")
 INVOKE_AVAILABLE = True
@@ -11,7 +12,7 @@ INVOKE_AVAILABLE = True
 try:
     import invoke
 except ImportError as IErr:
-    print(IErr)
+    logger.exception(IErr)
     INVOKE_AVAILABLE = False
 
 
@@ -40,7 +41,7 @@ def fetch_raw(c):
 
     loop = mainloop.coreloop(**run_kwargs)
     for savepath in loop:
-        print(f"Savepath: {savepath}")
+        logger.info(f"Savepath: {savepath}")
 
 
 @invoke.task()
@@ -51,7 +52,7 @@ def fetch_normalized(c):
 
     loop = mainloop.coreloop(**run_kwargs)
     for savepath in loop:
-        print(f"Savepath: {savepath}")
+        logger.info(f"Savepath: {savepath}")
 
 
 def build_namespaces():

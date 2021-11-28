@@ -11,6 +11,7 @@ import typing
 import app.constants as const
 from app.utils.functional import tumap, tufilter
 from app.utils.registry import registry_entry
+from app.utils.logs import logger
 
 
 def parse_exclamation_as_key(
@@ -53,9 +54,7 @@ class LocalProcessingBackend(AbstractProcessingBackend):
         """
         raw_result, ftp_error = fetch_ftp(addr, fname)
         if ftp_error:
-            print(ftp_error)
-        # else:
-        #     print(raw_result)
+            logger.error(ftp_error)
         parsed_result = parse_format(data=raw_result, dataformat=infer_format(fname)) if raw_result else raw_result
         return parsed_result
 

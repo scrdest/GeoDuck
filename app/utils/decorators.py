@@ -1,7 +1,9 @@
+import logging
 import os
 import sys
 import typing
 from functools import wraps
+from pprint import pformat
 
 try: import constants as const
 except ImportError: import app.constants as const
@@ -68,6 +70,50 @@ def with_print(pretty: bool = False, disabled: bool = False, to_stream: typing.O
     return _with_print_deco
 
 
+def with_logging(
+    pretty: bool = False,
+    disabled: bool = False,
+    level: typing.Optional[int] = None,
+    logger_name: typing.Optional[str] = None,
+    message_prefix: str = "",
+    **logger_kwargs,
+):
+    """Parameterized decorator; debugging helper - if enabled,
+    (pretty- or regular-) prints the decorated function's return
+    value to the logs.
+
+    :param pretty: If True, uses pprint() to format the output, otherwise does a plain old print() [faster, less nice].
+    :param disabled: If True, the target function is not decorated but is returned as-is.
+    :param level: log level to use, as a logging level constant int; INFO by default.
+    :param logger_name: logger to use (as identified by a logger name). Uses app logger by default.
+    :param message_prefix: optional string to be prepended before the return value
+    :param logger_kwargs: passes on parameters to the logger builder
+    """
+    def _with_logging_deco(func):
+
+        @wraps(func)
+        def _logwrapper(*args, **kwargs):
+            from app.utils.logs import get_logger
+
+            logger = get_logger(
+                name=logger_name,
+                level=level,
+                **logger_kwargs
+            )
+
+            result = func(*args, **kwargs)
+            formatted_result = pformat(result, indent=4) if pretty else result
+            prefixed_output = f"{message_prefix}{formatted_result}"
+
+            logger.log(level=level or logging.INFO, msg=prefixed_output)
+
+            return result
+
+        return func if disabled else _logwrapper
+
+    return _with_logging_deco
+
+
 def result_to_json(filename: typing.Optional[str], disabled: bool = False):
     """Parameterized decorator that dumps the output of the decorated
     function to a JSON file.
@@ -85,7 +131,7 @@ def result_to_json(filename: typing.Optional[str], disabled: bool = False):
             import json
             _filename = filename or os.path.join(const.OUTPUT_DIR, 'result.json')
             with open(_filename, 'w') as jsonfile:
-                writer = json.dump(result, jsonfile)
+                json.dump(result, jsonfile)
                 
             return result
             

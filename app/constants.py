@@ -8,6 +8,7 @@ ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 CONFIG_DIR = os.path.join(ROOT_DIR, 'config')
 OUTPUT_DIR = os.path.join(ROOT_DIR, 'results')
 BASE_DIR = os.path.dirname(ROOT_DIR)
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
 
 ENV_DEFAULT_TO_BASIC_CLI = "GDUCK_USE_CLI_FALLBACK"
 

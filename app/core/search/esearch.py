@@ -3,9 +3,10 @@ import json
 import requests
 
 import app.constants as const
-from app.utils.decorators import with_print
+from app.utils.decorators import with_print, with_logging
 
 
+@with_logging(pretty=False, disabled=True)
 @with_print(pretty=False, disabled=True)
 def build_query_url(
     term: str = None,
@@ -58,6 +59,7 @@ def build_query_url(
     return req_url
 
 
+@with_logging(pretty=False, disabled=True)
 @with_print(pretty=True, disabled=True)
 def run_query(query_url: str) -> str:
     """Runs a HTTP request against a specified URL.
@@ -71,6 +73,7 @@ def run_query(query_url: str) -> str:
     return result
 
 
+@with_logging(pretty=False, disabled=True)
 @with_print(pretty=True, disabled=True)
 def parse_query_response(qry_response: str) -> dict:
     """Parses the raw API response as returned by run_query()
