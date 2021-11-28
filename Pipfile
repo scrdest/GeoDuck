@@ -5,13 +5,15 @@ verify_ssl = true
 
 [dev-packages]
 pyan3 = "*"
+sphinx = "*"
 
 [packages]
 requests = "*"
 smart-open = "*"
 pyspark = {version="*"}
-hydra-core = "*"
+omegaconf = "*"
 prompt-toolkit = "*"
+invoke = "*"
 
 [requires]
 python_version = "3.7"

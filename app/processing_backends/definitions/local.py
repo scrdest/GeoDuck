@@ -1,3 +1,4 @@
+import copy
 import os
 
 from app.abcs import AbstractProcessingBackend
@@ -53,8 +54,8 @@ class LocalProcessingBackend(AbstractProcessingBackend):
         raw_result, ftp_error = fetch_ftp(addr, fname)
         if ftp_error:
             print(ftp_error)
-        else:
-            print(raw_result)
+        # else:
+        #     print(raw_result)
         parsed_result = parse_format(data=raw_result, dataformat=infer_format(fname)) if raw_result else raw_result
         return parsed_result
 
@@ -63,35 +64,51 @@ class LocalProcessingBackend(AbstractProcessingBackend):
     def save_extracted(cls, extracted: str, file: typing.Optional[os.PathLike] = None, *args, **kwargs) -> os.PathLike:
         """Write out the results of extract_item to a file."""
         _filepath = file or const.DEFAULT_EXTRACTED_SAVE_FILENAME
+        import json
         saved = False
 
         with open(_filepath, "w") as dumpfile:
-            dumpfile.write(extracted)
+            json.dump(extracted, dumpfile, indent=4)
 
         saved = True
         return _filepath if saved else None
 
 
     @classmethod
-    def normalize_item(cls, extracted, *args, **kwargs) -> typing.Dict[str, typing.Tuple[str]]:
+    def normalize_item(
+        cls,
+        extracted,
+        pad_lengths=True,
+        *args,
+        **kwargs
+    ) -> typing.Dict[str, typing.Tuple[str]]:
+
+        # Input standardization:
         data_items = (
             extracted if isinstance(extracted, typing.Iterable)
             and not isinstance(extracted, typing.Sequence)
             else [extracted]
         )
-        data_lines = tumap(lambda itm: itm.split("\n"), data_items)
+
+        # Preprocessing pipeline (lazy, unless passed 'reify=True'):
+        safe_data_items = tufilter(None, data_items)
+        data_lines = tumap(lambda itm: itm.split("\n"), safe_data_items)
         nonempty_lines = tufilter(None, data_lines)
         columns = tumap(lambda l: tumap(lambda x: x.split('\t'), l), nonempty_lines)
         key_valued = tumap(lambda c: tumap(parse_exclamation_as_key, c), columns)
 
+        # Setting up the bookkeeping:
         parsed = {}
         duplicate_keys = {}
+        column_lengths = {}
+        max_row_length = 0
 
         for series in key_valued:
             for (key, vals) in series:
                 if not vals or not tufilter(None, vals, reify=True):
                     continue
 
+                # Reindex duplicate key names:
                 used_key = key
 
                 if key in parsed:
@@ -101,17 +118,55 @@ class LocalProcessingBackend(AbstractProcessingBackend):
 
                 parsed[used_key] = vals
 
+                # Track tuple size for padding out short rows later:
+                row_length = len(vals)
+                if row_length > max_row_length:
+                    max_row_length = row_length
+
+                column_lengths.setdefault(row_length, []).append(used_key)
+
+        if pad_lengths:
+            # NOTE: there's a case to be made for this being a separate function;
+            #       keeping it in here for now to avoid passing dicts around weirdly.
+            # Pad out rows to uniform length so that we can make columns independent:
+            for curr_row_length, adjusted_keys in column_lengths.items():
+                if curr_row_length == max_row_length:
+                    continue
+
+                padding_size = (max_row_length - curr_row_length)
+
+                for short_key in adjusted_keys:
+                    curr_val = parsed[short_key]
+
+                    # Rough heuristic - most of the time, the 'paddable' rows
+                    # will just have one value to explode to all columns:
+                    first_val_item = next(iter(curr_val))
+
+                    # Append as many copies as needed to match the max rowsize:
+                    parsed[short_key] = curr_val + tuple((
+                        copy.deepcopy(first_val_item)
+                        for _ in range(padding_size)
+                    ))
+
         return parsed
 
 
     @classmethod
-    def save_normalized(cls, normalized: str, file: typing.Optional[os.PathLike] = None, *args, **kwargs) -> os.PathLike:
+    def save_normalized(
+        cls,
+        normalized: str,
+        file: typing.Optional[os.PathLike] = None,
+        *args,
+        **kwargs
+    ) -> os.PathLike:
+
         """Write out the results of normalize_item to a file."""
         _filepath = file or const.DEFAULT_NORMALIZED_SAVE_FILENAME
+        import json
         saved = False
 
         with open(_filepath, "w") as dumpfile:
-            dumpfile.write(normalized)
+            json.dump(normalized, dumpfile, indent=4)
 
         saved = True
         return _filepath if saved else None
