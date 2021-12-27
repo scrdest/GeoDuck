@@ -6,12 +6,14 @@ from app.parsers import parse_format, infer_format
 
 from app.utils.ftp import fetch_ftp
 
+import re
 import typing
 
 import app.constants as const
 from app.utils.functional import tumap, tufilter
 from app.utils.registry import registry_entry
 from app.utils.logs import logger
+from app.utils.ftp import build_data_ftp_url
 
 
 def parse_exclamation_as_key(
@@ -44,6 +46,7 @@ class LocalProcessingBackend(AbstractProcessingBackend):
     """A pure Python implementation of the processing pipeline.
     Not very efficient; intended as mostly a fallback solution.
     """
+    data_storage_class = dict
 
     @classmethod
     def extract_item(cls, addr: str, fname: str, *args, **kwargs):
@@ -153,7 +156,7 @@ class LocalProcessingBackend(AbstractProcessingBackend):
     @classmethod
     def save_normalized(
         cls,
-        normalized: str,
+        normalized: typing.Dict[str, typing.Tuple[str]],
         file: typing.Optional[os.PathLike] = None,
         *args,
         **kwargs
@@ -166,6 +169,82 @@ class LocalProcessingBackend(AbstractProcessingBackend):
 
         with open(_filepath, "w") as dumpfile:
             json.dump(normalized, dumpfile, indent=4)
+
+        saved = True
+        return _filepath if saved else None
+
+
+    @classmethod
+    def transpose_columns(
+        cls,
+        data: typing.Dict[str, typing.Tuple[str]],
+        *args, **kwargs
+    ):
+        """."""
+        transposition_iterable = zip(data.keys(), *zip(*data.values()))
+        transposed_data = []
+
+        for row in transposition_iterable:
+            key, values = row[0], row[1:]
+
+            for (i, val) in enumerate(values):
+                try:
+                    curr_dict = transposed_data[i]
+
+                except IndexError:
+                    curr_dict = {}
+                    transposed_data.append(curr_dict)
+
+                curr_dict[key] = val
+
+        return transposed_data
+
+
+    @classmethod
+    def retrieve_data_links(
+        cls,
+        normalized: typing.Dict[str, typing.Tuple[str]],
+        data_headers: typing.Optional[typing.Iterable] = None,
+        metadata_headers: typing.Optional[typing.Iterable] = None,
+        *args, **kwargs
+    ) -> dict[str, tuple]:
+        """Parse normalized metadata columns and extract FTP links to data."""
+        _metadata_headers = metadata_headers or ()
+        _data_headers = data_headers
+
+        if not _data_headers:
+            _data_headers = set()
+            search_qry = re.compile("Sample_supplementary_file.*")
+
+            for header in normalized:
+                if search_qry.fullmatch(header or ""):
+                    _data_headers.add(header)
+
+        titles = normalized["Sample_title"]
+        links = {}
+
+        for (i, title) in enumerate(titles):
+            link_data = tuple(filter(None, (
+                build_data_ftp_url(
+                    normalized[link_header][i]
+                )
+                for link_header
+                in _data_headers
+            )))
+
+            if link_data:
+                links[title] = link_data
+
+        return links
+
+    @classmethod
+    def save_data(cls, data: str, file: typing.Optional[os.PathLike] = None, *args, **kwargs) -> os.PathLike:
+        """Write out the results of extract_item to a file."""
+        _filepath = file or const.DEFAULT_EXTRACTED_SAVE_FILENAME
+        saved = False
+
+        with open(_filepath, "w") as dumpfile:
+            dumpfile.write(data)
 
         saved = True
         return _filepath if saved else None

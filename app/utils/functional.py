@@ -27,3 +27,24 @@ def reifiable(func: typing.Callable) -> typing.Callable:
 # reifiable variants of basic FP functions:
 tumap = reifiable(map)
 tufilter = reifiable(filter)
+
+
+def batch(iterable, batch_size=1):
+    if batch_size < 1:
+        raise ValueError(f"Batch size must be positive! (Found: {batch_size})")
+
+    iterator = iter(iterable)
+
+    while True:
+        batch = []
+        try:
+            for i in range(batch_size):
+                nextitem = next(iterator)
+                batch.append(nextitem)
+            yield batch
+
+        except StopIteration:
+            yield batch
+            break
+
+    return

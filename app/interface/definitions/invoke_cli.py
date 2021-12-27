@@ -29,8 +29,26 @@ def get_version():
 
 
 @invoke.task()
-def run(c):
-    pass
+def run(c, config_path=None):
+    """Run the full program, with exact behaviour defined by an (optional) config file."""
+    run_kwargs = dict()
+    config = None
+
+    if config_path:
+        import omegaconf
+
+        if os.path.sep in config_path:
+            # If there are any separators, assume it's a full absolute or relative path
+            norm_config_path = os.path.abspath(config_path)
+        else:
+            # No separators - assume it's a filename in the default directory
+            norm_config_path = os.path.join(const.DEFAULT_CONFIG_DIR, config_path)
+
+        config = omegaconf.OmegaConf.load(norm_config_path)
+
+    loop = mainloop.coreloop(cfg=config, **run_kwargs)
+    for savepath in loop:
+        logger.info(f"Output: {savepath}")
 
 
 @invoke.task()
@@ -77,19 +95,18 @@ def run_program(*args, **kwargs):
         program.run()
         return program
 
-    elif os.environ.get(const.ENV_DEFAULT_TO_BASIC_CLI):
+    elif os.environ.get(const.ENV_DEFAULT_TO_BASIC_CLI, "").lower().strip() == "true":
         # if GDUCK_USE_CLI_FALLBACK is True, use a simple entrypoint as a fallback
         from app.main import entrypoint
         entrypoint()
 
     else:
-        raise RuntimeError("This entrypoint requires the Invoke lib to be installed.")
+        raise RuntimeError("\n".join((
+            "This entrypoint requires the Invoke lib to be installed.",
+            "(you can disable this warning and fall back to a default entrypoint ",
+            f"instead by setting the {const.ENV_DEFAULT_TO_BASIC_CLI} envvar to True)"
+        )))
 
 
 if __name__ == '__main__':
     run_program()
-
-
-
-
-

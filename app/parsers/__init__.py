@@ -1,7 +1,7 @@
 import os
 import typing
 
-from app.constants import DEFAULT_PARSER_REGISTRY_KEY
+from app.constants import DEFAULT_PARSER_REGISTRY_KEY, PARSER_GENERIC
 from app.utils.registry import get_registry
 
 
@@ -11,7 +11,11 @@ fmt_map = {}
 def get_parser(fmt_key, registry_key=None, *args, **kwargs):
     from app.parsers import _registry_backend
     _repokey = registry_key or DEFAULT_PARSER_REGISTRY_KEY
-    parser = get_registry(_repokey)[fmt_key]
+    registry = get_registry(_repokey)
+    parser = (
+        registry.get(fmt_key)
+        or registry[PARSER_GENERIC]
+    )
     return parser
 
 

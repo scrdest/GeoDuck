@@ -61,6 +61,7 @@ BACKEND_LOCAL = 'local'
 BACKEND_SPARK = 'pyspark'
 
 PARSER_GENERIC = 'generic'
+PARSER_GZIP = 'gz'
 
 BASE_NCBI_QUERY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 NCBI_QUERY_URL_TEMPLATE = "{query_base}?{params}"
