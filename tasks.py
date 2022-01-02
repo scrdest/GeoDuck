@@ -7,7 +7,7 @@ if __name__ == '__main__':
     from invoke import Context
     ctx = Context()
     config_path = os.path.join(
-        constants.CONFIG_DIR,
+        constants.DEFAULT_CONFIG_DIR,
         "config.yaml"
     )
 

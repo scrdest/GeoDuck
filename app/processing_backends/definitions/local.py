@@ -56,9 +56,19 @@ class LocalProcessingBackend(AbstractProcessingBackend):
         :param fname: Filename in the source FTP directory
         """
         raw_result, ftp_error = fetch_ftp(addr, fname)
+
         if ftp_error:
             logger.error(ftp_error)
-        parsed_result = parse_format(data=raw_result, dataformat=infer_format(fname)) if raw_result else raw_result
+
+        parsed_result = (
+            parse_format(
+                data=raw_result,
+                dataformat=infer_format(fname),
+                filename=fname
+            ) if raw_result
+            else raw_result
+        )
+
         return parsed_result
 
 
@@ -238,12 +248,14 @@ class LocalProcessingBackend(AbstractProcessingBackend):
         return links
 
     @classmethod
-    def save_data(cls, data: str, file: typing.Optional[os.PathLike] = None, *args, **kwargs) -> os.PathLike:
+    def save_data(cls, data: typing.AnyStr, file: typing.Optional[os.PathLike] = None, *args, **kwargs) -> os.PathLike:
         """Write out the results of extract_item to a file."""
         _filepath = file or const.DEFAULT_EXTRACTED_SAVE_FILENAME
         saved = False
+        filemode = "wb" if isinstance(data, bytes) else "w"
+        os.makedirs(os.path.dirname(file), exist_ok=True)
 
-        with open(_filepath, "w") as dumpfile:
+        with open(_filepath, filemode) as dumpfile:
             dumpfile.write(data)
 
         saved = True

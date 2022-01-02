@@ -5,8 +5,9 @@ import typing
 from smart_open import open
 
 import app.constants as const
-from app.utils.decorators import with_print, with_logging
+from app.utils.decorators import with_print, with_logging, capture_bad_inputs
 from app.utils.logs import logger
+from app.utils.misc import decode_bytes
 
 ftp_client_builder = ftplib.FTP
 FtpClientType = ftplib.FTP
@@ -60,12 +61,17 @@ class FTPReader:
     def parse_to_raw_result(
         self,
         datastream: typing.Optional[typing.IO] = None,
-        filename: typing.Optional[str] = None
+        filename: typing.Optional[str] = None,
+        encoding: typing.Optional[str] = None
     ) -> typing.AnyStr:
 
         from gzip import GzipFile
+
         result = None
+
+        _encoding = encoding or "utf8"
         _data = datastream or self.storage
+
         fname = filename or self.fname
         if fname:
             logger.info(f"Processing filename: {fname}")
@@ -74,7 +80,7 @@ class FTPReader:
             _data.seek(0)
             bstream = GzipFile(fileobj=_data)
 
-            with open(bstream, 'r') as zipdata:
+            with open(bstream, 'rb') as zipdata:
                 result = zipdata.read()
 
         except Exception as E:
@@ -83,7 +89,17 @@ class FTPReader:
         finally:
             self.storage.close()
 
-        return result
+        try:
+            data = capture_bad_inputs(decode_bytes, use_pickle=True, capture_error=True)(
+                raw_data=result,
+                encoding=_encoding
+            )
+
+        except UnicodeDecodeError as DecErr:
+            logger.exception(DecErr)
+            data = result
+
+        return data
 
 
 def rebuild_client(maxtries=2) -> FtpClientType:

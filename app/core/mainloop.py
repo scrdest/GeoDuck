@@ -2,6 +2,7 @@ import os
 import typing
 
 import app.constants as const
+from app.utils.decorators import capture_bad_inputs
 from app.core.fetch.fetching import fetch_all
 from app.processing_backends import get_backend
 from app.utils.logs import logger
@@ -114,8 +115,7 @@ def _save_extracted(
     backend
 ):
     in_savedir = os.path.join(
-        const.BASE_DIR,
-        "outputs",
+        const.OUTPUT_DIR,
         "metadata",
         "raw",
     )
@@ -135,8 +135,7 @@ def _save_normalized(
     backend
 ):
     norm_savedir = os.path.join(
-        const.BASE_DIR,
-        "outputs",
+        const.OUTPUT_DIR,
         "metadata",
         "normalized",
     )
@@ -152,23 +151,42 @@ def _save_normalized(
     return normalized_savepath
 
 
+def build_data_savepath(links, series, idx, data_savedir):
+    src_address, filename = links[series][idx]
+    addr_components = src_address.split("/")
+    src_family = addr_components[-4]  # e.g. GSM123NNN
+    src_sample = addr_components[-2]  # e.g. GSM123987
+
+    fp = os.path.join(
+        data_savedir,
+        src_family,
+        src_sample,
+        series,
+        filename
+    )
+    return fp
+
+
 def _save_data(
     data,
     backend,
     links
 ):
     data_savedir = os.path.join(
-        const.BASE_DIR,
-        "outputs",
+        const.OUTPUT_DIR,
         "data",
     )
-    os.makedirs(data_savedir, exist_ok=True)
 
     savepaths = {
         series: [
             backend.save_data(
-                data,
-                f"{os.path.join(data_savedir, links[series][i][-1])}"
+                data=data,
+                file=build_data_savepath(
+                    idx=i,
+                    links=links,
+                    series=series,
+                    data_savedir=data_savedir
+                )
             )
             for (i, data) in enumerate(series_links)
             if data
@@ -176,9 +194,11 @@ def _save_data(
         if series_links else None
         for series, series_links in data.items()
     }
+
     return savepaths
 
 
+@capture_bad_inputs
 def process_item(
     addr,
     fname,
@@ -190,6 +210,7 @@ def process_item(
     save_downloaded=False,
     save_normalized=False,
     save_actual_data=True,
+    link_batch_factor=None
 ):
     # 'output' abstracts whatever data we want to track for returning
     output = None
@@ -242,10 +263,10 @@ def process_item(
 
         # == Batch links == #
         _typesafe_links = _links or {}
-        LINK_BATCH_FACTOR = 5
-        batch_count = len(_typesafe_links) // LINK_BATCH_FACTOR
+        _link_batch_size = max(1, (link_batch_factor or const.DEFAULT_BATCH_SIZE))
+        batch_count = max(1, len(_typesafe_links) // _link_batch_size)
 
-        batched_links = batch(_typesafe_links.items(), LINK_BATCH_FACTOR)
+        batched_links = batch(_typesafe_links.items(), _link_batch_size)
 
         for batch_idx, download_batch in enumerate(batched_links):
             logger.info(f"Batch {batch_idx+1}/{batch_count}")

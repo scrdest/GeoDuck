@@ -24,8 +24,15 @@ def infer_format(
     dataformat: typing.Optional[str] = None
 ) -> str:
 
-    if dataformat: return dataformat
-    basename, ext = os.path.splitext(filename)
+    if dataformat:
+        return dataformat
+
+    splitname = filename.split(".", maxsplit=1)
+    ext = None
+
+    if len(splitname) == 2:
+        basename, ext = splitname
+
     fmt = fmt_map.get(ext) or ext
     return fmt
 

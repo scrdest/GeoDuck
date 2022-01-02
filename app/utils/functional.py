@@ -1,6 +1,6 @@
 import functools
 import typing
-
+import app.constants
 
 REIFY_KEYWORD = "reify"
 
@@ -29,8 +29,10 @@ tumap = reifiable(map)
 tufilter = reifiable(filter)
 
 
-def batch(iterable, batch_size=1):
-    if batch_size < 1:
+def batch(iterable, batch_size=None):
+    _batch_size = batch_size or app.constants.DEFAULT_BATCH_SIZE
+
+    if _batch_size < 1:
         raise ValueError(f"Batch size must be positive! (Found: {batch_size})")
 
     iterator = iter(iterable)
@@ -38,7 +40,7 @@ def batch(iterable, batch_size=1):
     while True:
         batch = []
         try:
-            for i in range(batch_size):
+            for i in range(_batch_size):
                 nextitem = next(iterator)
                 batch.append(nextitem)
             yield batch

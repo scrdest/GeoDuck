@@ -4,18 +4,20 @@ import enum
 
 APP_NAME = 'GeoDuck'
 
-ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
-CONFIG_DIR = os.path.join(ROOT_DIR, 'config')
-OUTPUT_DIR = os.path.join(ROOT_DIR, 'results')
-BASE_DIR = os.path.dirname(ROOT_DIR)
+APP_DIR = os.path.abspath(os.path.dirname(__file__))
+BASE_DIR = os.path.dirname(APP_DIR)
+OUTPUT_DIR = os.path.join(BASE_DIR, 'outputs')
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
+DEFAULT_CONFIG_DIR = os.path.join(BASE_DIR, 'config')
+DEFAULT_BAD_ARGS_DIR = os.path.join(BASE_DIR, "debug")
 
-ENV_DEFAULT_TO_BASIC_CLI = "GDUCK_USE_CLI_FALLBACK"
+ENV_DEFAULT_TO_BASIC_CLI = "GDUCK_USE_CLI_FALLBACK"  # use Argparse CLI if specified parser is unavailable
+ENV_CAPTURE_BAD_INPUTS_ENABLED = "GDUCK_CAPTURE_BAD_INPUTS_ENABLED"  # enable @capture_bad_inputs decorators
 
 if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
-os.makedirs(CONFIG_DIR, exist_ok=True)
+os.makedirs(DEFAULT_CONFIG_DIR, exist_ok=True)
 
 
 class NcbiDbs(enum.Enum):
@@ -26,12 +28,11 @@ class NcbiDbs(enum.Enum):
 DEFAULT_DB_VALUE = NcbiDbs.DataSets.value
 
 ENV_CONFIGNAME_KEY = 'config_name'
-DEFAULT_CONFIG_DIR = os.path.join(ROOT_DIR, 'config')
 DEFAULT_CONFIG_FILENAME = 'config.yaml'
-
 
 DEFAULT_QUERY_INCREMENT = 1
 DEFAULT_SEARCH_INCREMENT = 1
+DEFAULT_BATCH_SIZE = 1
 
 DEFAULT_INTERFACE_REGISTRY_KEY = 'interface'
 DEFAULT_BACKEND_REGISTRY_KEY = 'backends'

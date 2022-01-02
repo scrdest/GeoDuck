@@ -50,3 +50,8 @@ def to_jsonl(iterable, base_filename=None):
         for fd in files.values():
             fd.close()
     return True
+
+
+def decode_bytes(raw_data, encoding):
+    result = str(raw_data, encoding=encoding) if raw_data else raw_data
+    return result
