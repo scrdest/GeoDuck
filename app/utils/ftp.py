@@ -5,8 +5,9 @@ import typing
 from smart_open import open
 
 import app.constants as const
-from app.utils.decorators import with_print, with_logging
+from app.utils.decorators import with_print, with_logging, capture_bad_inputs
 from app.utils.logs import logger
+from app.utils.misc import decode_bytes
 
 ftp_client_builder = ftplib.FTP
 FtpClientType = ftplib.FTP
@@ -23,12 +24,25 @@ def extract_ftp_links(search_result) -> typing.Dict[typing.Hashable, dict]:
     return links
 
 
-@with_logging(pretty=True, disabled=False)
+@with_logging(pretty=False, disabled=False)
 @with_print(pretty=True, disabled=True)
 def build_matrix_ftp_url(raw_ftp_link: str) -> typing.Tuple[str, str]:
     entry_name = raw_ftp_link.rstrip('/').split('/')[-1]
     protocol_adjusted_link = raw_ftp_link.replace('ftp://ftp.ncbi.nlm.nih.gov/', '', 1)
     download_ftp_path = ''.join((protocol_adjusted_link, 'matrix/'))
+    download_ftp_filename = entry_name
+    return download_ftp_path, download_ftp_filename
+
+
+@with_logging(pretty=True, disabled=True)
+@with_print(pretty=True, disabled=True)
+def build_data_ftp_url(raw_ftp_link: str) -> typing.Optional[typing.Tuple[str, str]]:
+    if not raw_ftp_link or raw_ftp_link.strip().upper() == "NONE":
+        return None
+
+    base_name, entry_name = raw_ftp_link.rstrip('/').rsplit('/', 1)
+    protocol_adjusted_link = base_name.replace('ftp://ftp.ncbi.nlm.nih.gov/', '', 1)
+    download_ftp_path = protocol_adjusted_link
     download_ftp_filename = entry_name
     return download_ftp_path, download_ftp_filename
 
@@ -47,12 +61,17 @@ class FTPReader:
     def parse_to_raw_result(
         self,
         datastream: typing.Optional[typing.IO] = None,
-        filename: typing.Optional[str] = None
+        filename: typing.Optional[str] = None,
+        encoding: typing.Optional[str] = None
     ) -> typing.AnyStr:
 
         from gzip import GzipFile
+
         result = None
+
+        _encoding = encoding or "utf8"
         _data = datastream or self.storage
+
         fname = filename or self.fname
         if fname:
             logger.info(f"Processing filename: {fname}")
@@ -61,7 +80,7 @@ class FTPReader:
             _data.seek(0)
             bstream = GzipFile(fileobj=_data)
 
-            with open(bstream, 'r') as zipdata:
+            with open(bstream, 'rb') as zipdata:
                 result = zipdata.read()
 
         except Exception as E:
@@ -70,12 +89,35 @@ class FTPReader:
         finally:
             self.storage.close()
 
-        return result
+        try:
+            data = capture_bad_inputs(decode_bytes, use_pickle=True, capture_error=True)(
+                raw_data=result,
+                encoding=_encoding
+            )
+
+        except UnicodeDecodeError as DecErr:
+            logger.exception(DecErr)
+            data = result
+
+        return data
 
 
-def rebuild_client() -> FtpClientType:
-    client = ftp_client_builder('ftp.ncbi.nlm.nih.gov')
-    client.login()
+def rebuild_client(maxtries=2) -> FtpClientType:
+    _try = 0
+    client = None
+
+    while _try < maxtries:
+
+        try:
+            client = ftp_client_builder('ftp.ncbi.nlm.nih.gov')
+            client.login()
+
+        except Exception as E:
+            logger.exception(E)
+
+        else:
+            break
+
     return client
 
 

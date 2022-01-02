@@ -2,9 +2,11 @@ import os
 import typing
 
 import app.constants as const
+from app.utils.decorators import capture_bad_inputs
 from app.core.fetch.fetching import fetch_all
 from app.processing_backends import get_backend
 from app.utils.logs import logger
+from utils.functional import batch
 
 
 def parse_app_args(config: object = None, ui_args: dict = None) -> dict:
@@ -108,60 +110,282 @@ def get_fetcher(app_args: dict) -> typing.Iterable[typing.Mapping]:
     return fetcher
 
 
+def _save_extracted(
+    extracted,
+    backend
+):
+    in_savedir = os.path.join(
+        const.OUTPUT_DIR,
+        "metadata",
+        "raw",
+    )
+    os.makedirs(in_savedir, exist_ok=True)
+    in_savepath = os.path.join(in_savedir, f"{fname}.json")
+
+    extracted_savepath = backend.save_extracted(
+        extracted=extracted,
+        file=in_savepath
+    )
+    logger.info(f"Extracted data saved to {extracted_savepath} successfully.")
+    return extracted_savepath
+
+
+def _save_normalized(
+    normalized,
+    backend
+):
+    norm_savedir = os.path.join(
+        const.OUTPUT_DIR,
+        "metadata",
+        "normalized",
+    )
+    os.makedirs(norm_savedir, exist_ok=True)
+    norm_savepath = os.path.join(norm_savedir, f"{fname}.json")
+
+    normalized_savepath = backend.save_normalized(
+        normalized=normalized,
+        file=norm_savepath
+    )
+
+    logger.info(f"Normalized data saved to {normalized_savepath} successfully.")
+    return normalized_savepath
+
+
+def build_data_savepath(links, series, idx, data_savedir):
+    src_address, filename = links[series][idx]
+    addr_components = src_address.split("/")
+    src_family = addr_components[-4]  # e.g. GSM123NNN
+    src_sample = addr_components[-2]  # e.g. GSM123987
+
+    fp = os.path.join(
+        data_savedir,
+        src_family,
+        src_sample,
+        series,
+        filename
+    )
+    return fp
+
+
+def _save_data(
+    data,
+    backend,
+    links
+):
+    data_savedir = os.path.join(
+        const.OUTPUT_DIR,
+        "data",
+    )
+
+    savepaths = {
+        series: [
+            backend.save_data(
+                data=data,
+                file=build_data_savepath(
+                    idx=i,
+                    links=links,
+                    series=series,
+                    data_savedir=data_savedir
+                )
+            )
+            for (i, data) in enumerate(series_links)
+            if data
+        ]
+        if series_links else None
+        for series, series_links in data.items()
+    }
+
+    return savepaths
+
+
+@capture_bad_inputs
 def process_item(
     addr,
     fname,
     backend,
+    extracted=None,
+    normalized=None,
+    links=None,
+    actual_data=None,
     save_downloaded=False,
-    save_normalized=False
+    save_normalized=False,
+    save_actual_data=True,
+    link_batch_factor=None
 ):
-    # Download:
-    extracted = backend.extract_item(
+    # 'output' abstracts whatever data we want to track for returning
+    output = None
+
+    # ==  Download:  == #
+    _extracted = extracted or backend.extract_item(
         backend_key=backend,
         addr=addr,
         fname=fname
     )
+    output = _extracted
 
-    if save_downloaded:
-        in_savedir = os.path.join(
-            const.BASE_DIR,
-            "outputs",
-            "extracted",
+    if _extracted and save_downloaded:
+        # save_* steps need to be optional to avoid unnecessary I/O
+        extracted_savepath = _save_extracted(
+            extracted=_extracted,
+            backend=backend
         )
-        os.makedirs(in_savedir, exist_ok=True)
-        in_savepath = os.path.join(in_savedir, f"{fname}.json")
-
-        extracted_savepath = backend.save_extracted(
-            extracted=extracted,
-            file=in_savepath
-        )
-
-        logger.info(f"Extracted data saved to {extracted_savepath} successfully.")
         return extracted_savepath
 
-    # Transform:
-    normalized = backend.normalize_item(
-        extracted=extracted,
-    )
+    # ==  Transform:  == #
+    _normalized = normalized or backend.normalize_item(
+        extracted=_extracted,
+    ) if _extracted else None
 
-    if save_normalized:
-        in_savedir = os.path.join(
-            const.BASE_DIR,
-            "outputs",
-            "normalized",
+    output = _normalized
+
+    if _normalized and save_normalized:
+        normalized_savepath = _save_normalized(
+            normalized=_normalized,
+            backend=backend
         )
-        os.makedirs(in_savedir, exist_ok=True)
-        in_savepath = os.path.join(in_savedir, f"{fname}.json")
-
-        normalized_savepath = backend.save_normalized(
-            normalized=normalized,
-            file=in_savepath
-        )
-
-        logger.info(f"Normalized data saved to {normalized_savepath} successfully.")
         return normalized_savepath
 
-    return normalized
+    # This all ^^^ got us to a metadata file;
+    # now we need to retrieve the actual data...
+
+    # ==  Retrieve links:  == #
+    _links = links or backend.retrieve_data_links(
+        normalized=_normalized
+    ) if _normalized else None
+
+
+    # == Download data == #
+    _actual_data = actual_data
+
+    if not actual_data:
+        _actual_data = {}
+        savepaths = []
+
+        # == Batch links == #
+        _typesafe_links = _links or {}
+        _link_batch_size = max(1, (link_batch_factor or const.DEFAULT_BATCH_SIZE))
+        batch_count = max(1, len(_typesafe_links) // _link_batch_size)
+
+        batched_links = batch(_typesafe_links.items(), _link_batch_size)
+
+        for batch_idx, download_batch in enumerate(batched_links):
+            logger.info(f"Batch {batch_idx+1}/{batch_count}")
+            _batch_data = {}
+
+            for (series, ftp_links) in download_batch:
+
+                for single_ftp_link in ftp_links:
+                    ftp_dir, fname = single_ftp_link
+
+                    result = backend.extract_item(
+                        addr=ftp_dir,
+                        fname=fname,
+                    )
+
+                    _batch_data[series] = (
+                        _batch_data.get(series) or list()
+                    ) + [result]
+
+            if _batch_data and save_actual_data:
+                batch_savepaths = _save_data(
+                    data=_batch_data,
+                    backend=backend,
+                    links=_links
+                )
+                savepaths.extend(batch_savepaths)
+
+    output = _actual_data
+
+    if save_actual_data:
+        output = savepaths
+
+    return output
+
+
+# ======================================================================== #
+#  Convenience functions for 'resuming' the pipeline from a certain point  #
+#  (basically, 'inverted' caching for the process_item() function - you    #
+#  provide the cached data, the function short-circuits to processing      #
+#  logically downstream from it)                                           #
+#                                                                          #
+#  This is a slightly weird design - in an ideal world, the process_item() #
+#  would be a function composition                                         #
+# ======================================================================== #
+def process_extracted(
+    extracted,
+    backend,
+    save_downloaded=False,
+    save_normalized=False,
+    save_actual_data=False,
+):
+    """Process pre-extracted, unnormalized metadata"""
+    result = process_item(
+        addr=None,
+        fname=None,
+        backend=backend,
+        extracted=extracted,
+        save_downloaded=save_downloaded,
+        save_normalized=save_normalized,
+        save_actual_data=save_actual_data,
+    )
+
+
+def process_normalized(
+    normalized,
+    backend,
+    save_normalized=False,
+    save_actual_data=False,
+):
+    """Process pre-extracted, normalized metadata"""
+    result = process_item(
+        addr=None,
+        fname=None,
+        backend=backend,
+        extracted=True,
+        save_downloaded=False,
+        save_normalized=save_normalized,
+        save_actual_data=save_actual_data,
+    )
+
+
+def process_links(
+    links,
+    backend,
+    save_normalized=False,
+    save_actual_data=False,
+):
+    """Process pre-extracted data links"""
+    result = process_item(
+        addr=None,
+        fname=None,
+        backend=backend,
+        extracted=True,
+        normalized=True,
+        links=links,
+        save_downloaded=False,
+        save_normalized=False,
+        save_actual_data=save_actual_data,
+    )
+
+
+def process_actual_data(
+    actual_data,
+    backend,
+    save_actual_data=False,
+):
+    """Process pre-extracted data"""
+    result = process_item(
+        addr=None,
+        fname=None,
+        backend=backend,
+        extracted=True,
+        normalized=True,
+        links=True,
+        actual_data=actual_data,
+        save_downloaded=False,
+        save_normalized=False,
+        save_actual_data=save_actual_data,
+    )
 
 
 def coreloop(cfg=None, **kwargs):
@@ -209,6 +433,8 @@ def main(cfg=None, **kwargs):
 
     All supported parameter keys are constants with the `MAINARG_` prefix.
     """
+    # NOTE: In principle, we could multiplex/interleave
+    # different coreloops running different arguments here:
     loop = coreloop(cfg=cfg, **kwargs)
     for data in loop:
         pass

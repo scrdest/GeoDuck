@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 import sys
@@ -138,3 +139,70 @@ def result_to_json(filename: typing.Optional[str], disabled: bool = False):
         return func if disabled else _resultwrapper
         
     return _jsondump_deco
+
+
+def capture_bad_inputs(func=None, to_dir: os.PathLike = None, use_pickle=True, capture_error=False, enabled=None):
+    """Parametrizeable decorator. If the decorated function throws an exception,
+    serializes the function parameters to a specified directory.
+
+    :param to_dir: Base directory to write the failed function's parameters to.
+    :param use_pickle: Serializer switch:
+                       True for Python Pickle (more flexible, less safe) - DEFAULT
+                       False for JSON (safer, constrained to data only)
+    :param capture_error: If True, captures the exception that caused the error. False (default) - just arguments.
+    :param enabled: If False, does not apply the decorator. If None (default), looks up value from an envvar.
+    :return: Decorator, to be applied on a function
+            (use either as a parameterized decorator, e.g. "@capture_bad_inputs()"
+            or just as a plain "@capture_bad_inputs" to use defaults values for args)
+    """
+
+    _disabled = (
+        enabled if enabled is not None
+        else (
+            (os.environ.get(const.ENV_CAPTURE_BAD_INPUTS_ENABLED) or "").lower()
+            == "true"
+        )
+    )
+    _to_dir = to_dir or const.DEFAULT_BAD_ARGS_DIR
+
+    def _catcherdeco(_func):
+
+        @wraps(_func)
+        def _catcherwrapper(*args, **kwargs):
+            fmt_suffix = ""
+            try:
+                result = _func(*args, **kwargs)
+
+            except Exception as E:
+                logging.debug(f"Capturing exception args for: {E}", stack_info=True)
+
+                if use_pickle:
+                    from pickle import dump as serialize
+                    filemode = "wb"
+                    fmt_suffix = ".pkl"
+
+                else:
+                    from json import dump as serialize
+                    filemode = "w"
+                    fmt_suffix = ".json"
+
+                dump_fname = f"{datetime.datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S')}_{_func.__name__}-FAILEDARGS{fmt_suffix}"
+                os.makedirs(_to_dir, exist_ok=True)
+                to_loc = os.path.join(_to_dir, dump_fname)
+                data_to_serialize = (args, kwargs)
+                if capture_error:
+                    data_to_serialize += (E,)
+
+                with open(to_loc, filemode) as dumpfile:
+                    serialize(data_to_serialize, dumpfile)
+
+                raise
+
+            return result
+
+        return _func if _disabled else _catcherwrapper
+
+    if func:
+        return _catcherdeco(func)
+
+    return _catcherdeco
